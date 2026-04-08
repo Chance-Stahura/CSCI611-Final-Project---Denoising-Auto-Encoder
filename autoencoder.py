@@ -32,6 +32,56 @@ cbsd_img_folder = os.path.join('data', 'cbsd68_extracted', 'CBSD68-dataset-maste
 # %% [markdown]
 # Preprocess data(1)
 
+# %% [markdown]
+# Define noise models:
+# Gaussian noise
+def add_gaussian_noise(x, sigma=0.2):
+    noise = tf.random.normal(shape=tf.shape(x), mean=0.0, stddev=sigma)
+    x_noisy = x + noise
+    return tf.clip_by_value(x_noisy, 0.0, 1.0)
+
+# salt-and-pepper noise
+def add_salt_pepper_noise(x, p=0.1):
+    random_vals = tf.random.uniform(tf.shape(x))
+
+    salt = tf.cast(random_vals > (1 - p/2), tf.float32)
+    pepper = tf.cast(random_vals < (p/2), tf.float32)
+
+    x_noisy = x * (1 - salt - pepper) + salt
+    return x_noisy
+
+# structured noise (random occlusion)
+def add_occlusion(x, size=12):
+    h, w = tf.shape(x)[0], tf.shape(x)[1]
+
+    top = tf.random.uniform([], 0, h - size, dtype=tf.int32)
+    left = tf.random.uniform([], 0, w - size, dtype=tf.int32)
+
+    mask = tf.ones_like(x)
+
+    mask = tf.tensor_scatter_nd_update(
+        mask,
+        indices=tf.reshape(
+            tf.stack(tf.meshgrid(
+                tf.range(top, top + size),
+                tf.range(left, left + size),
+                indexing='ij'
+            ), axis=-1),
+            [-1, 2]
+        ),
+        updates=tf.zeros([size * size])
+    )
+
+    return x * mask
+
+# 
+noise_functions = {
+    "gaussian": lambda x: add_gaussian_noise(x, sigma=0.2),
+    "salt_pepper": lambda x: add_salt_pepper_noise(x, p=0.1),
+    "occlusion": lambda x: add_occlusion(x, size=12),
+}
+
+
 # %%
 #define paths
 bsd500_train = BASE_DIR / "data/bsd500/data/images/train"
@@ -39,13 +89,6 @@ bsd500_val = BASE_DIR / "data/bsd500/data/images/val"
 
 cbsd_ground_truth = BASE_DIR / "data/cbsd68/CBSD68-dataset-master/CBSD68/original_png"
 cbsd_noise = BASE_DIR / "data/cbsd68/CBSD68-dataset-master/CBSD68/"
-
-# %% [markdown]
-# Define noise models:
-# Gaussian noise, salt-and-pepper noise, structured noise (random occlusion)
-
-
-
 
 
 # %% [markdown]
