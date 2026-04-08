@@ -104,7 +104,8 @@ def get_noise_fn(config):
 
     else:
         raise ValueError("Unknown noise type")
-
+# example usage:
+# noise_fn = get_noise_fn(config)
 
 # %%
 # define paths
