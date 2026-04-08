@@ -74,12 +74,24 @@ def add_occlusion(x, size=12):
 
     return x * mask
 
-# 
-noise_functions = {
-    "gaussian": lambda x: add_gaussian_noise(x, sigma=0.2),
-    "salt_pepper": lambda x: add_salt_pepper_noise(x, p=0.1),
-    "occlusion": lambda x: add_occlusion(x, size=12),
-}
+# Noise registry
+def get_noise_fn(config):
+    noise_type = config["noise"]["type"]
+
+    if noise_type == "gaussian":
+        sigma = config["noise"]["sigma"]
+        return lambda x: add_gaussian_noise(x, sigma)
+
+    elif noise_type == "salt_pepper":
+        p = config["noise"]["p"]
+        return lambda x: add_salt_pepper_noise(x, p)
+
+    elif noise_type == "occlusion":
+        size = config["noise"]["size"]
+        return lambda x: add_occlusion(x, size)
+
+    else:
+        raise ValueError("Unknown noise type")
 
 
 # %%
