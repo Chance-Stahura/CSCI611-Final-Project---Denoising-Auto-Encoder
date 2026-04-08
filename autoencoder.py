@@ -92,15 +92,33 @@ def get_noise_fn(config):
 
     else:
         raise ValueError("Unknown noise type")
-
+# example usage:
+# noise_fn = get_noise_fn(config)
 
 # %%
 #define paths
 bsd500_train = BASE_DIR / "data/bsd500/data/images/train"
 bsd500_val = BASE_DIR / "data/bsd500/data/images/val"
 
+<<<<<<< HEAD
 cbsd_ground_truth = BASE_DIR / "data/cbsd68/CBSD68-dataset-master/CBSD68/original_png"
 cbsd_noise = BASE_DIR / "data/cbsd68/CBSD68-dataset-master/CBSD68/"
+=======
+    dataset = dataset.map(lambda x: (
+        noise_fn(x),  # input (noisy)
+        x             # target (clean)
+    ))
+
+    dataset = dataset.batch(128).prefetch(tf.data.AUTOTUNE)
+    return dataset
+# example usage:
+# train_ds = make_dataset(x_train, lambda x: add_gaussian_noise(x, sigma=0.2))
+
+    # apply transformations
+    # add noise on the fly
+    # split data
+    # create data loaders
+>>>>>>> 634f4ab (commented example usage of get_noise_fn, make_dataset)
 
 
 # %% [markdown]
