@@ -54,6 +54,13 @@ cbsd_ground_truth: Path = (
 )
 cbsd_noise: Path = BASE_DIR / "data/cbsd68/CBSD68-dataset-master/CBSD68/"
 
+# %% [markdown]
+# Define noise models:
+# Gaussian noise, salt-and-pepper noise, structured noise (random occlusion)
+
+
+
+
 
 # %% [markdown]
 # Preprocess data(2)
