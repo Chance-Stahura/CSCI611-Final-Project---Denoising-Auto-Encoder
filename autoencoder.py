@@ -11,22 +11,14 @@ from PIL import Image
 from keras import layers, models, optimizers
 from keras.utils import load_img
 from keras.layers import Dense, Input, Reshape, Flatten, Conv2D, Conv2DTranspose
+from scripts.download_dataset import download_cbsd68
 
 BASE_DIR = Path(__file__).resolve().parent
 
 #download + extract dataset
-url = 'https://github.com/clausmichele/CBSD68-dataset/archive/refs/heads/master.zip'
-cbsd_path = tf.keras.utils.get_file(
-    'cbsd68.zip', 
-    origin = url, 
-    extract=True,
-    cache_dir = '.', # current directory
-    cache_subdir = 'data' # save to ./data/
-)
-
 #get the actual image files
 #get base dir where cbsd zip is extracted, create data sub directories for data
-cbsd_img_folder = os.path.join('data', 'cbsd68_extracted', 'CBSD68-dataset-master', 'CBSD68', 'original_png')
+cbsd68_img_folder = download_cbsd68(BASE_DIR)
 
 
 # %% [markdown]
