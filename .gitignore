@@ -1,3 +1,6 @@
+# Local
+data/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -207,6 +210,3 @@ CSCI611-Final-Project---Denoising-Auto-Encoder.code-workspace
 marimo/_static/
 marimo/_lsp/
 __marimo__/
-
-# Data
-data/
