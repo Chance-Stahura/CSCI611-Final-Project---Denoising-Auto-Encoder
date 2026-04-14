@@ -13,21 +13,37 @@ from pathlib import Path
 # from dataset import Dataset
 # from noise import add_noise
 
-BASE_DIR: Path = Path(__file__).resolve().parent
+BASE_DIR: Path = Path(__file__).resolve().parent.parent
 
-dataset_url: str = (
+cbsd68_url: str = (
     "https://github.com/clausmichele/CBSD68-dataset/archive/refs/heads/master.zip"
 )
-cbsd_path: str = tf.keras.utils.get_file(
+cbsd68_path: str = tf.keras.utils.get_file(
     "cbsd68.zip",
-    origin=dataset_url,
+    origin=cbsd68_url,
     extract=True,
     cache_dir=".",  # current directory
     cache_subdir="data",  # save to ./data/
 )
 
-cbsd_img_folder: str = join(
+cbsd68_img_folder: str = join(
     "data", "cbsd68_extracted", "CBSD68-dataset-master", "CBSD68", "original_png"
+)
+
+bsds500_url: str = (
+    "https://github.com/BIDS/BSDS500/archive/refs/heads/master.zip"
+)
+bsds500_path: str = tf.keras.utils.get_file(
+    "BSDS500.zip",
+    origin=bsds500_url,
+    extract=True,
+    cache_dir=".",  # current directory
+    cache_subdir="data",  # save to ./data/
+)
+# get the actual image files
+# get base dir where cbsd zip is extracted, create data sub directories for data
+bsds500_img_folder: str = join(
+    "data", "BSDS500_extracted", "BSDS500-master", "BSDS500", "data", "images"
 )
 
 
