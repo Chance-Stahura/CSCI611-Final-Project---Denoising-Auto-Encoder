@@ -21,24 +21,44 @@ from keras.utils import load_img
 # from keras.layers import Dense, Input, Reshape, Flatten, Conv2D, Conv2DTranspose
 
 BASE_DIR: Path = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+DATA_DIR.mkdir(exist_ok=True)
 
-# download + extract dataset
-dataset_url: str = (
+
+# download + extract datasets CBSD68 and BSDS500
+cbsd68_url: str = (
     "https://github.com/clausmichele/CBSD68-dataset/archive/refs/heads/master.zip"
 )
-cbsd_path: str = tf.keras.utils.get_file(
+cbsd68_path: str = tf.keras.utils.get_file(
     "cbsd68.zip",
-    origin=dataset_url,
+    origin=cbsd68_url,
     extract=True,
     cache_dir=".",  # current directory
     cache_subdir="data",  # save to ./data/
 )
-
 # get the actual image files
 # get base dir where cbsd zip is extracted, create data sub directories for data
-cbsd_img_folder: str = os.path.join(
+cbsd68_img_folder: str = os.path.join(
     "data", "cbsd68_extracted", "CBSD68-dataset-master", "CBSD68", "original_png"
 )
+
+bsds500_url: str = (
+    "https://github.com/BIDS/BSDS500/archive/refs/heads/master.zip"
+)
+bsds500_path: str = tf.keras.utils.get_file(
+    "BSDS500.zip",
+    origin=bsds500_url,
+    extract=True,
+    cache_dir=".",  # current directory
+    cache_subdir="data",  # save to ./data/
+)
+# get the actual image files
+# get base dir where cbsd zip is extracted, create data sub directories for data
+bsds500_img_folder: str = os.path.join(
+    "data", "BSDS500_extracted", "BSDS500-master", "BSDS500", "data", "images"
+)
+
+
 
 
 # %% [markdown]
