@@ -86,15 +86,17 @@ def add_gaussian_noise(x, sigma=0.2):
     x_noisy = x + noise
     return tf.clip_by_value(x_noisy, 0.0, 1.0)
 
+
 # salt-and-pepper noise
 def add_salt_pepper_noise(x, p=0.1):
     random_vals = tf.random.uniform(tf.shape(x))
 
-    salt = tf.cast(random_vals > (1 - p/2), tf.float32)
-    pepper = tf.cast(random_vals < (p/2), tf.float32)
+    salt = tf.cast(random_vals > (1 - p / 2), tf.float32)
+    pepper = tf.cast(random_vals < (p / 2), tf.float32)
 
     x_noisy = x * (1 - salt - pepper) + salt
     return x_noisy
+
 
 # structured noise (random occlusion)
 def add_occlusion(x, size=12):
@@ -108,17 +110,21 @@ def add_occlusion(x, size=12):
     mask = tf.tensor_scatter_nd_update(
         mask,
         indices=tf.reshape(
-            tf.stack(tf.meshgrid(
-                tf.range(top, top + size),
-                tf.range(left, left + size),
-                indexing='ij'
-            ), axis=-1),
-            [-1, 2]
+            tf.stack(
+                tf.meshgrid(
+                    tf.range(top, top + size),
+                    tf.range(left, left + size),
+                    indexing="ij",
+                ),
+                axis=-1,
+            ),
+            [-1, 2],
         ),
-        updates=tf.zeros([size * size])
+        updates=tf.zeros([size * size]),
     )
 
     return x * mask
+
 
 # Noise registry
 def get_noise_fn(config):
@@ -142,7 +148,7 @@ def get_noise_fn(config):
 
 # %%
 # preprocess BSD500 dataset
-## create dataset class
+# create dataset class
 # WE ARE USING THIS CLASS BC WE ARE USING 'ON DEMAND' PATCH EXTRACTION
 class Dataset(tf.keras.utils.Sequence):
 
