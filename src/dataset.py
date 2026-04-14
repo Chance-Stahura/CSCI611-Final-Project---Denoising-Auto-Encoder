@@ -35,6 +35,21 @@ class Dataset(tf.keras.utils.Sequence):
     def __len__(self) -> int:
         return len(self.image_paths)
 
+    def _get_total_batches(self) -> int:
+        """Returns the number of batches per epoch"""
+        patches_sum: int = 0
+
+        # sum the each image's patches
+        for i in self.img_dims:
+            width: int = i[0]
+            height: int = i[1]
+            total_patches: int = (height // self.patch_size) * (
+                width // self.patch_size
+            )
+            patches_sum += total_patches
+
+        return patches_sum // self.batch_size
+
     def _load_image_as_tensor(self, path: str) -> tf.Tensor:
         """Loads an image as a tensor"""
         img_tensor: PILImage = load_img(path)
