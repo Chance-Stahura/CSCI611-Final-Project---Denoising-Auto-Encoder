@@ -41,7 +41,7 @@ def download_cbsd68():
         with zipfile.ZipFile(cbsd68_zip_path, 'r') as zip_ref:
             zip_ref.extractall(extract_dir)
 
-    _safe_move(extracted_root / "CBSD68", extract_dir)
+    _safe_move(extracted_root / "CBSD68", TARGET_DIR_CBSD68)
     _safe_rmtree(extracted_root)
     _safe_unlink(cbsd68_zip_path)  # deletes cbsd68.zip
 
@@ -74,7 +74,6 @@ def download_bsds500():
         with zipfile.ZipFile(bsds500_zip_path, 'r') as zip_ref:
             zip_ref.extractall(extract_dir)
 
-    TARGET_DIR_BSDS500.mkdir(exist_ok=True)
     _safe_move(extracted_root / "BSDS500" / "data" / "images", TARGET_DIR_BSDS500)
     _safe_rmtree(extracted_root)
     _safe_unlink(bsds500_zip_path)  # deletes bsds500.zip
@@ -84,16 +83,16 @@ def download_bsds500():
     return TARGET_DIR_BSDS500
 
 
-def _safe_move(path_target, path_destination):
+def _safe_move(path_src, path_dst):
     try:
-        if path_target.exists() and path_destination.exists():
-            shutil.move(path_target, path_destination)
+        if path_src.exists():
+            shutil.move(str(path_src), str(path_dst))
     except PermissionError:
         pass
 
 
 def _safe_rmtree(path, retries=5, delay=0.5):
-    for i in range(retries):
+    for _ in range(retries):
         try:
             if path.exists():
                 shutil.rmtree(path)
@@ -103,12 +102,15 @@ def _safe_rmtree(path, retries=5, delay=0.5):
     raise
 
 
-def _safe_unlink(path):
-    try:
-        if path.exists():
-            path.unlink()
-    except PermissionError:
-        pass
+def _safe_unlink(path, retries=5, delay=0.5):
+    for _ in range(retries):
+        try:
+            if path.exists():
+                path.unlink()
+            return
+        except (PermissionError, OSError):
+            time.sleep(delay)
+    raise
 
 
 def get_cbsd68_path():
