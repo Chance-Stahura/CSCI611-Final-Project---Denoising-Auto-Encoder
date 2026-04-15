@@ -13,47 +13,18 @@ from pathlib import Path
 # from dataset import Dataset
 # from noise import add_noise
 
-BASE_DIR: Path = Path(__file__).resolve().parent.parent
+from scripts.download_dataset import get_cbsd68_path
+from scripts.download_dataset import get_bsds500_path
 
-cbsd68_url: str = (
-    "https://github.com/clausmichele/CBSD68-dataset/archive/refs/heads/master.zip"
-)
-cbsd68_path: str = tf.keras.utils.get_file(
-    "cbsd68.zip",
-    origin=cbsd68_url,
-    extract=True,
-    cache_dir=".",  # current directory
-    cache_subdir="data",  # save to ./data/
-)
+BASE_DIR: Path = Path(__file__).resolve().parents[2]
 
-cbsd68_img_folder: str = join(
-    "data", "cbsd68_extracted", "CBSD68-dataset-master", "CBSD68", "original_png"
-)
+cbsd68_img_folder: Path = get_cbsd68_path()
+cbsd_ground_truth: Path = cbsd68_img_folder / "original_png"
 
-bsds500_url: str = (
-    "https://github.com/BIDS/BSDS500/archive/refs/heads/master.zip"
-)
-bsds500_path: str = tf.keras.utils.get_file(
-    "BSDS500.zip",
-    origin=bsds500_url,
-    extract=True,
-    cache_dir=".",  # current directory
-    cache_subdir="data",  # save to ./data/
-)
-# get the actual image files
-# get base dir where cbsd zip is extracted, create data sub directories for data
-bsds500_img_folder: str = join(
-    "data", "BSDS500_extracted", "BSDS500-master", "BSDS500", "data", "images"
-)
-
-
-bsd500_train: Path = Path(BASE_DIR / "data/BSDS500_extracted/BSDS500-master/BSDS500/data/images/train")
-bsd500_val: Path = Path(BASE_DIR / "data/BSDS500_extracted/BSDS500-master/BSDS500/data/images/val")
-
-cbsd_ground_truth: Path = (
-    BASE_DIR / "data/cbsd68/CBSD68-dataset-master/CBSD68/original_png"
-)
-cbsd_noise: Path = BASE_DIR / "data/cbsd68/CBSD68-dataset-master/CBSD68/"
+bsds500_img_folder: Path = get_bsds500_path()
+bsd500_train: Path = bsds500_img_folder / "train"
+bsd500_val: Path = bsds500_img_folder / "val"
+bsd500_test: Path = bsds500_img_folder / "test"
 
 
 def build_image_set(folder: Path) -> list[str]:
