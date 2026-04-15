@@ -81,7 +81,9 @@ class Dataset(tf.keras.utils.Sequence):
         # load image
         path: str = self.image_paths[idx]
         img_tensor: tf.Tensor = self._load_image_as_tensor(path)
-        clean_patch: tf.Tensor = self._extract_patches(img_tensor)
+        patches: tf.Tensor = self._extract_patches(img_tensor)
+        #reshape from (1, row, col, patch_height*patch_width*channels) -> (N, patch height, patch width, channels)
+        clean_patch: tf.Tensor = tf.reshape(patches, (-1, self.patch_size, self.patch_size, 3)) 
         noisy_patch: tf.Tensor = self._add_noise(clean_patch)
         return (noisy_patch, clean_patch)
 
