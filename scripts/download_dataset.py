@@ -24,7 +24,6 @@ def download_cbsd68():
     cbsd68_url: str = (
         "https://github.com/clausmichele/CBSD68-dataset/archive/refs/heads/master.zip"
     )
-    # cbsd68_url = "https://github.com/clausmichele/CBSD68-dataset/archive/refs/heads/master.zip"
     cbsd68_zip_path = Path(tf.keras.utils.get_file(
         fname="cbsd68.zip",
         origin=cbsd68_url,
@@ -44,17 +43,45 @@ def download_cbsd68():
 
     _safe_move(extracted_root / "CBSD68", extract_dir)
     _safe_rmtree(extracted_root)
-    _safe_unlink(cbsd68_zip_path)  # deletes zip file
+    _safe_unlink(cbsd68_zip_path)  # deletes cbsd68.zip
 
-    # final image directory
-    cbsd68_img_folder = TARGET_DIR_CBSD68 / "original_png"
+    print("CBSD68 Dataset path:", TARGET_DIR_CBSD68)
 
-    print("CBSD68 Dataset path:", cbsd68_img_folder)
-
-    return cbsd68_img_folder
+    return TARGET_DIR_CBSD68
 
 
-# def download_bsds500():
+def download_bsds500():
+    """Download BSDS500 dataset to data/."""
+
+    # download + extract CBSD68 dataset
+    bsds500_url: str = (
+        "https://github.com/BIDS/BSDS500/archive/refs/heads/master.zip"
+    )
+    bsds500_zip_path = Path(tf.keras.utils.get_file(
+        fname="bsds500.zip",
+        origin=bsds500_url,
+        extract=False,
+        cache_dir=str(PROJECT_ROOT),  # current directory
+        cache_subdir="data"  # save to ./data/
+    ))
+    
+    print(bsds500_zip_path)
+    
+    extract_dir = bsds500_zip_path.parent
+    extracted_root = extract_dir / "BSDS500-master"
+
+    if not extracted_root.exists():
+        with zipfile.ZipFile(bsds500_zip_path, 'r') as zip_ref:
+            zip_ref.extractall(extract_dir)
+
+    TARGET_DIR_BSDS500.mkdir(exist_ok=True)
+    _safe_move(extracted_root / "BSDS500" / "data" / "images", TARGET_DIR_BSDS500)
+    _safe_rmtree(extracted_root)
+    _safe_unlink(bsds500_zip_path)  # deletes bsds500.zip
+
+    print("BSDS500 Dataset path:", TARGET_DIR_BSDS500)
+
+    return TARGET_DIR_BSDS500
 
 
 def _safe_move(path_target, path_destination):
@@ -66,10 +93,6 @@ def _safe_move(path_target, path_destination):
 
 
 def _safe_rmtree(path, retries=5, delay=0.5):
-    # print()
-    # print(path)
-    # print(path.exists())
-    # print(path.is_file())
     for i in range(retries):
         try:
             if path.exists():
@@ -83,9 +106,6 @@ def _safe_rmtree(path, retries=5, delay=0.5):
 def _safe_unlink(path):
     try:
         if path.exists():
-            # print(path)
-            # print(path.exists())
-            # print(path.is_file())
             path.unlink()
     except PermissionError:
         pass
@@ -97,12 +117,12 @@ def get_cbsd68_path():
     return TARGET_DIR_CBSD68
 
 
-# def get_bsds500_path():
-#     if not TARGET_DIR_BSDS500.exists():
-#         return download_bsds500()
-#     return TARGET_DIR_BSDS500
+def get_bsds500_path():
+    if not TARGET_DIR_BSDS500.exists():
+        return download_bsds500()
+    return TARGET_DIR_BSDS500
 
 
 if __name__ == "__main__":
     cbsd68_img_folder = get_cbsd68_path()
-    # bsds500_img_folder = get_bsds500_path()
+    bsds500_img_folder = get_bsds500_path()
