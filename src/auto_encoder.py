@@ -13,8 +13,8 @@ from pathlib import Path
 # from dataset import Dataset
 # from noise import add_noise
 
-from scripts.download_dataset import get_cbsd68_path
-from scripts.download_dataset import get_bsds500_path
+from .scripts.download_dataset import get_cbsd68_path
+from .scripts.download_dataset import get_bsds500_path
 
 BASE_DIR: Path = Path(__file__).resolve().parents[2]
 
