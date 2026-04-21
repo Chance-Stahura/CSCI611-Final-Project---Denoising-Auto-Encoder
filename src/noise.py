@@ -9,19 +9,26 @@ import tensorflow as tf
 
 def add_gaussian_noise(x: tf.Tensor, sigma: float = 0.2) -> tf.Tensor:
     """Adds gaussian noise to an image"""
-    noise: tf.Tensor = tf.random.normal(shape=tf.shape(x), mean=0.0, stddev=sigma)
+    noise: tf.Tensor = tf.random.normal(
+        shape=tf.shape(x),
+        mean=0.0,
+        stddev=sigma,
+        dtype=x.dtype  # prevents "implicit casts" for if x is float16 or float64
+    )
     x_noisy: tf.Tensor = x + noise
     return tf.clip_by_value(x_noisy, 0.0, 1.0)
 
 
 def add_salt_pepper_noise(x: tf.Tensor, p: float = 0.1) -> tf.Tensor:
     """Adds salt and pepper noise to an image"""
-    random_vals: tf.Tensor = tf.random.uniform(tf.shape(x))
+    random_vals: tf.Tensor = tf.random.uniform(tf.shape(x), dtype=x.dtype)
 
-    salt: tf.Tensor = tf.cast(random_vals > (1 - p / 2), tf.float32)
-    pepper: tf.Tensor = tf.cast(random_vals < (p / 2), tf.float32)
+    salt_mask: tf.Tensor = random_vals > (1 - p / 2)
+    pepper_mask: tf.Tensor = random_vals < (p / 2)
 
-    x_noisy: tf.Tensor = x * (1 - salt - pepper) + salt
+    x_noisy: tf.Tensor = tf.where(salt_mask, tf.ones_like(x), x)
+    x_noisy: tf.Tensor = tf.where(pepper_mask, tf.zeros_like(x), x_noisy)
+
     return x_noisy
 
 
