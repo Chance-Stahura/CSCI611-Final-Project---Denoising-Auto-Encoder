@@ -6,6 +6,7 @@ from numpy import ndarray
 from PIL.Image import Image as PILImage
 
 import tensorflow as tf
+import random
 
 from keras.utils import load_img
 
@@ -82,10 +83,99 @@ class Dataset(tf.keras.utils.Sequence):
         path: str = self.image_paths[idx]
         img_tensor: tf.Tensor = self._load_image_as_tensor(path)
         patches: tf.Tensor = self._extract_patches(img_tensor)
-        #reshape from (1, row, col, patch_height*patch_width*channels) -> (N, patch height, patch width, channels)
+        # reshape from (1, row, col, patch_height*patch_width*channels) -> (N, patch height, patch width, channels)
         clean_patch: tf.Tensor = tf.reshape(patches, (-1, self.patch_size, self.patch_size, 3)) 
         noisy_patch: tf.Tensor = self._add_noise(clean_patch)
         return (noisy_patch, clean_patch)
+
+
+# ChatGPT suggested improvement of the Dataset class definition above:
+# class Dataset(tf.keras.utils.Sequence):
+#     """Patch-based Dataset for Denoising Autoencoder"""
+
+#     def __init__(
+#         self,
+#         image_paths: List[str],
+#         patch_size: int = 64,
+#         sigma: int = 25,
+#         batch_size: int = 32,
+#         training: bool = True,
+#     ) -> None:
+
+#         self.image_paths = image_paths
+#         self.patch_size = patch_size
+#         self.sigma = sigma / 255.0
+#         self.batch_size = batch_size
+#         self.training = training
+
+#         # Build patch index: (image_idx, row, col)
+#         self.patch_index: List[Tuple[int, int, int]] = []
+#         self.image_cache = []
+
+#         for img_idx, path in enumerate(self.image_paths):
+#             img = load_img(path)
+#             arr = img_to_array(img) / 255.0  # (H, W, C)
+
+#             self.image_cache.append(arr)
+
+#             H, W, _ = arr.shape
+#             n_rows = H // self.patch_size
+#             n_cols = W // self.patch_size
+
+#             for r in range(n_rows):
+#                 for c in range(n_cols):
+#                     self.patch_index.append((img_idx, r, c))
+
+#         self.total_patches = len(self.patch_index)
+
+#         if self.training:
+#             random.shuffle(self.patch_index)
+
+#     def __len__(self) -> int:
+#         """Number of batches per epoch"""
+#         return self.total_patches // self.batch_size
+
+#     def _extract_patch(self, img: np.ndarray, r: int, c: int) -> np.ndarray:
+#         """Extract a single patch"""
+#         ps = self.patch_size
+#         return img[
+#             r * ps : (r + 1) * ps,
+#             c * ps : (c + 1) * ps,
+#             :
+#         ]
+
+#     def _add_noise(self, clean: np.ndarray) -> np.ndarray:
+#         noise = np.random.normal(0, self.sigma, clean.shape)
+#         noisy = clean + noise
+#         return np.clip(noisy, 0.0, 1.0)
+
+#     def __getitem__(self, idx: int):
+#         """Return one batch of patches"""
+
+#         start = idx * self.batch_size
+#         end = start + self.batch_size
+#         batch_indices = self.patch_index[start:end]
+
+#         clean_batch = []
+#         noisy_batch = []
+
+#         for img_idx, r, c in batch_indices:
+#             img = self.image_cache[img_idx]
+#             clean_patch = self._extract_patch(img, r, c)
+#             noisy_patch = self._add_noise(clean_patch)
+
+#             clean_batch.append(clean_patch)
+#             noisy_batch.append(noisy_patch)
+
+#         clean_batch = np.stack(clean_batch, axis=0)
+#         noisy_batch = np.stack(noisy_batch, axis=0)
+
+#         return noisy_batch.astype(np.float32), clean_batch.astype(np.float32)
+
+#     def on_epoch_end(self):
+#         """Shuffle after each epoch"""
+#         if self.training:
+#             random.shuffle(self.patch_index)
 
 
 if __name__ == "__main__":
