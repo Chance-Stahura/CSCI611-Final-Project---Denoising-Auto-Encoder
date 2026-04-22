@@ -102,69 +102,16 @@ class Dataset(tf.keras.utils.Sequence):
             target_width=self.patch_size,
         )
 
-    def _add_gaussian_noise(self, clean_tensor: tf.Tensor) -> tf.Tensor:
-        """Adds Gaussian noise"""
-        noise: tf.Tensor = tf.random.normal(
-            shape=tf.shape(clean_tensor),
-            mean=GAUSSIAN_MEAN,
-            stddev=self.sigma,
-        )
-        return tf.clip_by_value(clean_tensor + noise, PIXEL_MIN, PIXEL_MAX)
-
-    def _add_salt_pepper_noise(self, clean_tensor: tf.Tensor) -> tf.Tensor:
-        """Adds salt and pepper noise"""
-        random_vals: tf.Tensor = tf.random.uniform(tf.shape(clean_tensor))
-
-        salt: tf.Tensor = tf.cast(
-            random_vals > (1.0 - self.salt_pepper_p / 2.0),
-            tf.float32,
-        )
-        pepper: tf.Tensor = tf.cast(
-            random_vals < (self.salt_pepper_p / 2.0),
-            tf.float32,
-        )
-
-        noisy_tensor: tf.Tensor = clean_tensor * (1.0 - salt - pepper) + salt
-        return tf.clip_by_value(noisy_tensor, PIXEL_MIN, PIXEL_MAX)
-
-    def _add_occlusion(self, clean_tensor: tf.Tensor) -> tf.Tensor:
-        """Adds random square occlusion"""
-        height: tf.Tensor = tf.shape(clean_tensor)[0]
-        width: tf.Tensor = tf.shape(clean_tensor)[1]
-
-        occ_size: int = self.occlusion_size
-
-        max_top: tf.Tensor = tf.maximum(height - occ_size + 1, 1)
-        max_left: tf.Tensor = tf.maximum(width - occ_size + 1, 1)
-
-        top: tf.Tensor = tf.random.uniform([], 0, max_top, dtype=tf.int32)
-        left: tf.Tensor = tf.random.uniform([], 0, max_left, dtype=tf.int32)
-
-        pad_bottom: tf.Tensor = height - top - occ_size
-        pad_right: tf.Tensor = width - left - occ_size
-
-        occlusion_mask: tf.Tensor = tf.pad(
-            tf.zeros((occ_size, occ_size, IMAGE_CHANNELS), dtype=clean_tensor.dtype),
-            paddings=[
-                [top, pad_bottom],
-                [left, pad_right],
-                [0, 0],
-            ],
-            constant_values=1.0,
-        )
-
-        return clean_tensor * occlusion_mask
-
     def _apply_noise(self, clean_tensor: tf.Tensor) -> tf.Tensor:
         """Selects which noise to apply"""
         if self.noise_type == "gaussian":
-            return self._add_gaussian_noise(clean_tensor)
+            return add_gaussian_noise(clean_tensor)
 
         if self.noise_type == "salt_pepper":
-            return self._add_salt_pepper_noise(clean_tensor)
+            return add_salt_pepper_noise(clean_tensor)
 
         if self.noise_type == "occlusion":
-            return self._add_occlusion(clean_tensor)
+            return add_occlusion(clean_tensor)
 
         raise ValueError(f"Unknown noise type: {self.noise_type}")
 
