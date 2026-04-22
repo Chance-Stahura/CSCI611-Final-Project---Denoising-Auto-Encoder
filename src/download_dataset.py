@@ -1,89 +1,89 @@
-import os
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # suppress INFO and WARNING
-os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"  # suppress all logs
+"""This will download the CBSD68 and BSDS500 datasets."""
+
+# coding: utf-8
 
 import zipfile
 from pathlib import Path
 import tensorflow as tf
 import shutil
 import time
+from os import environ
 
+environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # suppress INFO and WARNING
+environ["TF_ENABLE_ONEDNN_OPTS"] = "0"  # suppress all logs
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT: Path = Path(__file__).resolve().parents[1]
+
 print("PROJECT_ROOT: ", PROJECT_ROOT)  # DEBUGGING
-DATA_DIR = PROJECT_ROOT / "data"
+
+DATA_DIR: Path = PROJECT_ROOT / "data"
 DATA_DIR.mkdir(exist_ok=True)
-TARGET_DIR_CBSD68 = DATA_DIR / "CBSD68"
-TARGET_DIR_BSDS500 = DATA_DIR / "BSDS500"
+
+CBSD68_URL: str = (
+    "https://github.com/clausmichele/CBSD68-dataset/archive/refs/heads/master.zip"
+)
+TARGET_DIR_CBSD68: Path = DATA_DIR / "CBSD68"
+
+BSDS500_URL: str = "https://github.com/BIDS/BSDS500/archive/refs/heads/master.zip"
+TARGET_DIR_BSDS500: Path = DATA_DIR / "BSDS500"
 
 
-def download_cbsd68():
-    """Download CBSD68 dataset to data/."""
+def download_dataset(dataset_path: Path) -> Path:
+    """Downloads the dataset if it doesn't exist"""
 
-    # download + extract CBSD68 dataset
-    cbsd68_url: str = (
-        "https://github.com/clausmichele/CBSD68-dataset/archive/refs/heads/master.zip"
+    dataset_url: str = ""
+    target_dir: Path = Path()
+    root_name: str = ""
+    src_path: Path = Path()
+
+    if dataset_path == TARGET_DIR_CBSD68:
+        dataset_url = CBSD68_URL
+        root_name = "CBSD68-dataset-master"
+        target_dir = TARGET_DIR_CBSD68
+    elif dataset_path == TARGET_DIR_BSDS500:
+        dataset_url = BSDS500_URL
+        root_name = "BSDS500-master"
+        target_dir = TARGET_DIR_BSDS500
+    else:
+        raise ValueError(f"Unknown dataset path: {dataset_path}")
+
+    print(f"Downloading dataset from {dataset_url}")
+
+    dataset_zip_path: Path = Path(
+        tf.keras.utils.get_file(
+            fname="dataset.zip",
+            origin=dataset_url,
+            extract=False,
+            cache_dir=str(PROJECT_ROOT),  # current directory
+            cache_subdir="data",  # save to ./data/
+        )
     )
-    cbsd68_zip_path = Path(tf.keras.utils.get_file(
-        fname="cbsd68.zip",
-        origin=cbsd68_url,
-        extract=False,
-        cache_dir=str(PROJECT_ROOT),  # current directory
-        cache_subdir="data"  # save to ./data/
-    ))
-    
-    print(cbsd68_zip_path)
-    
-    extract_dir = cbsd68_zip_path.parent
-    extracted_root = extract_dir / "CBSD68-dataset-master"
+
+    extract_dir: Path = dataset_zip_path.parent
+    extracted_root: Path = Path(f"{extract_dir}/{root_name}")
 
     if not extracted_root.exists():
-        with zipfile.ZipFile(cbsd68_zip_path, 'r') as zip_ref:
+        with zipfile.ZipFile(dataset_zip_path, "r") as zip_ref:
             zip_ref.extractall(extract_dir)
 
-    _safe_move(extracted_root / "CBSD68", TARGET_DIR_CBSD68)
+    if dataset_path == TARGET_DIR_CBSD68:
+        src_path = extracted_root / "CBSD68"
+    elif dataset_path == TARGET_DIR_BSDS500:
+        src_path = extracted_root / "BSDS500" / "data" / "images"
+    else:
+        raise ValueError(f"Unknown dataset path: {dataset_path}")
+
+    if not target_dir.exists():
+        _safe_move(src_path, target_dir)
     _safe_rmtree(extracted_root)
-    _safe_unlink(cbsd68_zip_path)  # deletes cbsd68.zip
+    _safe_unlink(dataset_zip_path)  # deletes whatever.zip
 
-    print("CBSD68 Dataset path:", TARGET_DIR_CBSD68)
-
-    return TARGET_DIR_CBSD68
-
-
-def download_bsds500():
-    """Download BSDS500 dataset to data/."""
-
-    # download + extract CBSD68 dataset
-    bsds500_url: str = (
-        "https://github.com/BIDS/BSDS500/archive/refs/heads/master.zip"
-    )
-    bsds500_zip_path = Path(tf.keras.utils.get_file(
-        fname="bsds500.zip",
-        origin=bsds500_url,
-        extract=False,
-        cache_dir=str(PROJECT_ROOT),  # current directory
-        cache_subdir="data"  # save to ./data/
-    ))
-    
-    print(bsds500_zip_path)
-    
-    extract_dir = bsds500_zip_path.parent
-    extracted_root = extract_dir / "BSDS500-master"
-
-    if not extracted_root.exists():
-        with zipfile.ZipFile(bsds500_zip_path, 'r') as zip_ref:
-            zip_ref.extractall(extract_dir)
-
-    _safe_move(extracted_root / "BSDS500" / "data" / "images", TARGET_DIR_BSDS500)
-    _safe_rmtree(extracted_root)
-    _safe_unlink(bsds500_zip_path)  # deletes bsds500.zip
-
-    print("BSDS500 Dataset path:", TARGET_DIR_BSDS500)
-
-    return TARGET_DIR_BSDS500
+    print(f"{root_name} Dataset path: {target_dir}")
+    return target_dir
 
 
-def _safe_move(path_src, path_dst):
+def _safe_move(path_src: Path, path_dst: Path) -> None:
+    """Moves path_src to path_dst"""
     try:
         if path_src.exists():
             shutil.move(str(path_src), str(path_dst))
@@ -91,7 +91,8 @@ def _safe_move(path_src, path_dst):
         pass
 
 
-def _safe_rmtree(path, retries=5, delay=0.5):
+def _safe_rmtree(path: Path, retries: int = 5, delay: float = 0.5) -> None:
+    """Removes path recursively"""
     for _ in range(retries):
         try:
             if path.exists():
@@ -102,7 +103,8 @@ def _safe_rmtree(path, retries=5, delay=0.5):
     raise
 
 
-def _safe_unlink(path, retries=5, delay=0.5):
+def _safe_unlink(path: Path, retries: int = 5, delay: float = 0.5) -> None:
+    """Removes path recursively"""
     for _ in range(retries):
         try:
             if path.exists():
@@ -113,18 +115,14 @@ def _safe_unlink(path, retries=5, delay=0.5):
     raise
 
 
-def get_cbsd68_path():
-    if not TARGET_DIR_CBSD68.exists():
-        return download_cbsd68()
-    return TARGET_DIR_CBSD68
-
-
-def get_bsds500_path():
-    if not TARGET_DIR_BSDS500.exists():
-        return download_bsds500()
-    return TARGET_DIR_BSDS500
+def get_path(dataset_path: Path) -> Path:
+    if not dataset_path.exists():
+        return download_dataset(dataset_path)
+    return dataset_path
 
 
 if __name__ == "__main__":
-    cbsd68_img_folder = get_cbsd68_path()
-    bsds500_img_folder = get_bsds500_path()
+    # cbsd68_img_folder: Path = get_cbsd68_path()
+    # bsds500_img_folder: Path = get_bsds500_path()
+    cbsd68_img_folder: Path = get_path(TARGET_DIR_CBSD68)
+    bsds500_img_folder: Path = get_path(TARGET_DIR_BSDS500)

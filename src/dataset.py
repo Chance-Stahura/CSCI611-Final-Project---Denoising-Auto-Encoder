@@ -1,13 +1,28 @@
-"""This will hold the dataset class"""
+"""This will hold the dataset class."""
 
 # coding: utf-8
 
-from numpy import ndarray
-from PIL.Image import Image as PILImage
+import math
 
+import numpy as np
 import tensorflow as tf
+from keras.utils import img_to_array, load_img
 
-from keras.utils import load_img
+from noise import add_gaussian_noise, add_occlusion, add_salt_pepper_noise
+
+DEFAULT_PATCH_SIZE: int = 64
+DEFAULT_SIGMA: int = 25
+DEFAULT_BATCH_SIZE: int = 32
+
+PIXEL_SCALE: float = 255.0
+PIXEL_MIN: float = 0.0
+PIXEL_MAX: float = 1.0
+IMAGE_CHANNELS: int = 3
+
+DEFAULT_NOISE_TYPE: str = "gaussian"
+DEFAULT_SALT_PEPPER_P: float = 0.1
+DEFAULT_OCCLUSION_SIZE: int = 12
+GAUSSIAN_MEAN: float = 0.0
 
 
 class Dataset(tf.keras.utils.Sequence):
@@ -16,76 +31,178 @@ class Dataset(tf.keras.utils.Sequence):
     def __init__(
         self,
         image_paths: list[str],
-        patch_size: int = 64,
-        sigma: int = 25,
-        batch_size: int = 32,
+        patch_size: int = DEFAULT_PATCH_SIZE,
+        sigma: int = DEFAULT_SIGMA,
+        batch_size: int = DEFAULT_BATCH_SIZE,
         training: bool = True,
+        return_full_image: bool = False,
+        shuffle: bool = True,
+        noise_type: str = DEFAULT_NOISE_TYPE,
+        salt_pepper_p: float = DEFAULT_SALT_PEPPER_P,
+        occlusion_size: int = DEFAULT_OCCLUSION_SIZE,
     ) -> None:
         """Dataset Constructor"""
-        # self.img_dims = []
-        self.image_paths = image_paths
-        # for i in self.image_paths:
-        #     img: PILImage = load_img(i)
-        #     self.img_dims.append((img.size))
+        self.image_paths: list[str] = sorted(image_paths)
         self.patch_size: int = patch_size
-        self.sigma: float = sigma / 255.0
+        self.sigma: float = sigma / PIXEL_SCALE
         self.batch_size: int = batch_size
         self.training: bool = training
+        self.return_full_image: bool = return_full_image
+        self.shuffle: bool = shuffle
+        self.noise_type: str = noise_type
+        self.salt_pepper_p: float = salt_pepper_p
+        self.occlusion_size: int = occlusion_size
+
+        self.indexes: np.ndarray = np.arange(len(self.image_paths))
+        self.on_epoch_end()
 
     def __len__(self) -> int:
-        return len(self.image_paths)
-
-    def _get_total_batches(self) -> int:
         """Returns the number of batches per epoch"""
-        patches_sum: int = 0
+        return math.ceil(len(self.image_paths) / self.batch_size)
 
-        # sum the each image's patches
-        for i in self.img_dims:
-            width: int = i[0]
-            height: int = i[1]
-            total_patches: int = (height // self.patch_size) * (
-                width // self.patch_size
-            )
-            patches_sum += total_patches
+    def on_epoch_end(self) -> None:
+        """Shuffles indexes after each epoch"""
+        if self.training and self.shuffle:
+            np.random.shuffle(self.indexed)
 
-        return patches_sum // self.batch_size
+    def _Load_image_as_tensor(self, path: str) -> tf.Tensor:
+        """Loads an image as a tensor with shape (H, W, C)"""
+        img_tensor = load_img(path)
+        tensor_array: np.ndarray = img_to_array(img_tensor) / PIXEL_SCALE
+        return tf.convert_to_tensor(tensor_array, dtype=tf.float32)
 
-    def _load_image_as_tensor(self, path: str) -> tf.Tensor:
-        """Loads an image as a tensor"""
-        img_tensor: PILImage = load_img(path)
-        # convert to tensor: (N, H, W, C)
-        tensor_array: ndarray = tf.keras.utils.img_to_array(img_tensor)
-        tensor_array = tensor_array / 255.0
-        return tf.expand_dims(tensor_array, axis=0)
+    def _random_crop(self, img_tensor: tf.Tensor) -> tf.Tensor:
+        """Extracts a random patch from an image"""
+        height: tf.Tensor = tf.shape(img_tensor)[0]
+        width: tf.Tensor = tf.shape(img_tensor)[1]
 
-    def _extract_patches(self, img_tensor: tf.Tensor) -> tf.Tensor:
-        """Extracts patches from an image"""
-        return tf.image.extract_patches(
-            images=img_tensor,
-            sizes=[1, self.patch_size, self.patch_size, 1],
-            strides=[1, self.patch_size, self.patch_size, 1],
-            rates=[1, 1, 1, 1],
-            padding="VALID",
+        if height < self.patch_size or width < self.patch_size:
+            new_height: tf.Tensor = tf.maximum(height, self.patch_size)
+            new_width: tf.Tensor = tf.maximum(width, self.patch_size)
+            img_tensor = tf.image.resize(img_tensor, [new_height, new_width])
+
+        return tf.image.random_crop(
+            img_tensor,
+            size=[self.patch_size, self.patch_size, IMAGE_CHANNELS],
         )
 
-    def _add_noise(self, clean_patch: tf.Tensor) -> tf.Tensor:
-        """Adds noise to a clean patch"""
-        added_noise: tf.Tensor = tf.random.normal(
-            shape=tf.shape(clean_patch), stddev=self.sigma
-        )
-        noisy_patch: tf.Tensor = tf.add(clean_patch, added_noise)
-        return tf.clip_by_value(noisy_patch, 0, 1)
+    def _center_crop(self, img_tensor: tf.Tensor) -> tf.Tensor:
+        """Extracts a center patch from an image"""
+        height: tf.Tensor = tf.shape(img_tensor)[0]
+        width: tf.Tensor = tf.shape(img_tensor)[1]
 
-    def __getitem__(self, idx: int) -> tuple[tf.Tensor, tf.Tensor]:
-        """Returns a batch of noisy and clean patches."""
-        # load image
-        path: str = self.image_paths[idx]
-        img_tensor: tf.Tensor = self._load_image_as_tensor(path)
-        patches: tf.Tensor = self._extract_patches(img_tensor)
-        #reshape from (1, row, col, patch_height*patch_width*channels) -> (N, patch height, patch width, channels)
-        clean_patch: tf.Tensor = tf.reshape(patches, (-1, self.patch_size, self.patch_size, 3)) 
-        noisy_patch: tf.Tensor = self._add_noise(clean_patch)
-        return (noisy_patch, clean_patch)
+        if height < self.patch_size or width < self.patch_size:
+            new_height: tf.Tensor = tf.maximum(height, self.patch_size)
+            new_width: tf.Tensor = tf.maximum(width, self.patch_size)
+            img_tensor = tf.image.resize(img_tensor, [new_height, new_width])
+
+        return tf.image.resize_with_crop_or_pad(
+            img_tensor,
+            target_height=self.patch_size,
+            target_width=self.patch_size,
+        )
+
+    def _add_gaussian_noise(self, clean_tensor: tf.Tensor) -> tf.Tensor:
+        """Adds Gaussian noise"""
+        noise: tf.Tensor = tf.random.normal(
+            shape=tf.shape(clean_tensor),
+            mean=GAUSSIAN_MEAN,
+            stddev=self.sigma,
+        )
+        return tf.clip_by_value(clean_tensor + noise, PIXEL_MIN, PIXEL_MAX)
+
+    def _add_salt_pepper_noise(self, clean_tensor: tf.Tensor) -> tf.Tensor:
+        """Adds salt and pepper noise"""
+        random_vals: tf.Tensor = tf.random.uniform(tf.shape(clean_tensor))
+
+        salt: tf.Tensor = tf.cast(
+            random_vals > (1.0 - self.salt_pepper_p / 2.0),
+            tf.float32,
+        )
+        pepper: tf.Tensor = tf.cast(
+            random_vals < (self.salt_pepper_p / 2.0),
+            tf.float32,
+        )
+
+        noisy_tensor: tf.Tensor = clean_tensor * (1.0 - salt - pepper) + salt
+        return tf.clip_by_value(noisy_tensor, PIXEL_MIN, PIXEL_MAX)
+
+    def _add_occlusion(self, clean_tensor: tf.Tensor) -> tf.Tensor:
+        """Adds random square occlusion"""
+        height: tf.Tensor = tf.shape(clean_tensor)[0]
+        width: tf.Tensor = tf.shape(clean_tensor)[1]
+
+        occ_size: int = self.occlusion_size
+
+        max_top: tf.Tensor = tf.maximum(height - occ_size + 1, 1)
+        max_left: tf.Tensor = tf.maximum(width - occ_size + 1, 1)
+
+        top: tf.Tensor = tf.random.uniform([], 0, max_top, dtype=tf.int32)
+        left: tf.Tensor = tf.random.uniform([], 0, max_left, dtype=tf.int32)
+
+        pad_bottom: tf.Tensor = height - top - occ_size
+        pad_right: tf.Tensor = width - left - occ_size
+
+        occlusion_mask: tf.Tensor = tf.pad(
+            tf.zeros((occ_size, occ_size, IMAGE_CHANNELS), dtype=clean_tensor.dtype),
+            paddings=[
+                [top, pad_bottom],
+                [left, pad_right],
+                [0, 0],
+            ],
+            constant_values=1.0,
+        )
+
+        return clean_tensor * occlusion_mask
+
+    def _apply_noise(self, clean_tensor: tf.Tensor) -> tf.Tensor:
+        """Selects which noise to apply"""
+        if self.noise_type == "gaussian":
+            return self._add_gaussian_noise(clean_tensor)
+
+        if self.noise_type == "salt_pepper":
+            return self._add_salt_pepper_noise(clean_tensor)
+
+        if self.noise_type == "occlusion":
+            return self._add_occlusion(clean_tensor)
+
+        raise ValueError(f"Unknown noise type: {self.noise_type}")
+
+    def __getitem__(self, img_id: int) -> tuple[tf.Tensor, tf.Tensor]:
+        """Returns a batch of noisy and clean images/patches"""
+        start: int = img_id * self.batch_size
+        end: int = (img_id + 1) * self.batch_size
+        batch_indices: np.ndarray = self.indexes[start:end]
+        batch_paths: list[str] = []
+
+        for counter in batch_indices:
+            batch_paths.append(self.image_paths[counter])
+
+        clean_batch: list[tf.Tensor] = []
+        noisy_batch: list[tf.Tensor] = []
+
+        for path in batch_paths:
+            img_tensor: tf.Tensor = self._load_image_as_tensor(path)
+
+            clean_tensor: tf.Tensor
+
+            if self.return_full_image:
+                clean_tensor = img_tensor
+            else:
+                if self.training:
+                    clean_tensor = self._random_crop(img_tensor)
+                else:
+                    clean_tensor = self._center_crop(img_tensor)
+
+            noisy_tensor: tf.Tensor = self._apply_noise(clean_tensor)
+
+            clean_batch.append(clean_tensor)
+            noisy_batch.append(noisy_tensor)
+
+        noisy_batch_tensor: tf.Tensor = tf.stack(noisy_batch)
+        clean_batch_tensor: tf.Tensor = tf.stack(clean_batch)
+
+        return noisy_batch_tensor, clean_batch_tensor
 
 
 if __name__ == "__main__":
