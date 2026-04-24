@@ -12,7 +12,7 @@ from keras.layers import Dense, Input, Reshape, Flatten, Conv2D, Conv2DTranspose
 
 from keras.constraints import max_norm
 
-from dataset import Dataset
+from .dataset import Dataset
 # from noise import add_noise
 
 import tensorflow as tf
