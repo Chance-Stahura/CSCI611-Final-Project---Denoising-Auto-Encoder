@@ -28,6 +28,9 @@ GAUSSIAN_MEAN: float = 0.0
 class Dataset(tf.keras.utils.Sequence):
     """Dataset Class"""
 
+    patch_size: int = 64
+    batch_size: int = 32
+
     def __init__(
         self,
         image_paths: list[str],
