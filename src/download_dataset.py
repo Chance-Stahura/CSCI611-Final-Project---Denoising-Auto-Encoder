@@ -80,17 +80,17 @@ def download_dataset(dataset_path: Path) -> Path:
     if not target_dir.exists():
         _safe_move(src_path, target_dir)
 
-    _remove_non_jpg_files(target_dir)
+    _remove_other_files(target_dir)
     _safe_rmtree(extracted_root)
     _safe_unlink(dataset_zip_path)  # deletes whatever.zip
 
     print(f"{root_name} Dataset path: {target_dir}")
     return target_dir
 
-def _remove_non_jpg_files(root: Path) -> None:
-    """Recursively delete all files that are not .jpg"""
+def _remove_other_files(root: Path) -> None:
+    """Recursively delete all files that are not .jpg or .png (image files)"""
     for path in root.rglob("*"):
-        if path.is_file() and path.suffix.lower() != ".jpg":
+        if path.is_file() and path.suffix.lower() != ".jpg" and path.suffix.lower() != ".png":
             path.unlink()
 
 def _safe_move(path_src: Path, path_dst: Path) -> None:
