@@ -3,10 +3,10 @@
 # coding: utf-8
 
 import math
-
 import numpy as np
-import tensorflow as tf
-from keras.utils import img_to_array, load_img
+
+import tensorflow as tf  # type: ignore
+from keras.utils import img_to_array, load_img  # type: ignore
 
 from noise import add_gaussian_noise, add_occlusion, add_salt_pepper_noise
 

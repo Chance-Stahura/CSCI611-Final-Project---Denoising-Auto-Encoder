@@ -6,25 +6,16 @@ from os import listdir
 from os.path import isfile, join
 from pathlib import Path
 
-from keras import layers, Model, optimizers, Sequential
-
-from keras.layers import Dense, Input, Reshape, Flatten, Conv2D, Conv2DTranspose
-
-from keras.constraints import max_norm
+import tensorflow as tf  # type: ignore
+from tensorflow.keras import layers, models  # type: ignore
 
 from dataset import Dataset
-
-# from noise import add_noise
-
-import tensorflow as tf
-from keras import layers, models
 
 from download_dataset import (
     download_dataset,
     TARGET_DIR_BSDS500,
     TARGET_DIR_CBSD68,
 )
-from dataset import Dataset
 
 PATCH_SIZE: int = 64
 NOISE_SIGMA: int = 25
