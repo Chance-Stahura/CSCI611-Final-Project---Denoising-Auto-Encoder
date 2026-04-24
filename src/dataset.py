@@ -106,6 +106,7 @@ class Dataset(tf.keras.utils.Sequence):
         )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     def _apply_noise(self, clean_tensor: tf.Tensor) -> tf.Tensor:
         """Selects which noise to apply"""
         if self.noise_type == "gaussian":
@@ -170,17 +171,23 @@ class Dataset(tf.keras.utils.Sequence):
 
         return clean_tensor * occlusion_mask
 
+=======
+>>>>>>> ca4f2f8 (opti)
     def _apply_noise(self, clean_tensor: tf.Tensor) -> tf.Tensor:
         """Selects which noise to apply"""
         if self.noise_type == "gaussian":
-            return self._add_gaussian_noise(clean_tensor)
+            return add_gaussian_noise(clean_tensor)
 
         if self.noise_type == "salt_pepper":
-            return self._add_salt_pepper_noise(clean_tensor)
+            return add_salt_pepper_noise(clean_tensor)
 
         if self.noise_type == "occlusion":
+<<<<<<< HEAD
             return self._add_occlusion(clean_tensor)
 >>>>>>> f5c7e4c (massive fix)
+=======
+            return add_occlusion(clean_tensor)
+>>>>>>> ca4f2f8 (opti)
 
         raise ValueError(f"Unknown noise type: {self.noise_type}")
 
