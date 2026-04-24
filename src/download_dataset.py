@@ -27,6 +27,14 @@ TARGET_DIR_CBSD68: Path = DATA_DIR / "CBSD68"
 BSDS500_URL: str = "https://github.com/BIDS/BSDS500/archive/refs/heads/master.zip"
 TARGET_DIR_BSDS500: Path = DATA_DIR / "BSDS500"
 
+VALID_EXTENSIONS = {
+    ".jpg", ".jpeg",
+    ".png",
+    ".bmp",
+    ".tiff", ".tif",
+    ".webp"
+}
+
 
 def download_dataset(dataset_path: Path) -> Path:
     """Downloads the dataset if it doesn't exist"""
@@ -90,7 +98,7 @@ def download_dataset(dataset_path: Path) -> Path:
 def _remove_other_files(root: Path) -> None:
     """Recursively delete all files that are not .jpg or .png (image files)"""
     for path in root.rglob("*"):
-        if path.is_file() and path.suffix.lower() != ".jpg" and path.suffix.lower() != ".png":
+        if (path.is_file() and path.suffix.lower() not in VALID_EXTENSIONS):
             path.unlink()
 
 def _safe_move(path_src: Path, path_dst: Path) -> None:
