@@ -66,9 +66,9 @@ class Dataset(tf.keras.utils.Sequence):
     def on_epoch_end(self) -> None:
         """Shuffles indexes after each epoch"""
         if self.training and self.shuffle:
-            np.random.shuffle(self.indexed)
+            np.random.shuffle(self.indexes)
 
-    def _Load_image_as_tensor(self, path: str) -> tf.Tensor:
+    def _load_image_as_tensor(self, path: str) -> tf.Tensor:
         """Loads an image as a tensor with shape (H, W, C)"""
         img_tensor = load_img(path)
         tensor_array: np.ndarray = img_to_array(img_tensor) / PIXEL_SCALE
