@@ -108,15 +108,42 @@ class Dataset(tf.keras.utils.Sequence):
     def _apply_noise(self, clean_tensor: tf.Tensor) -> tf.Tensor:
         """Selects which noise to apply"""
         if self.noise_type == "gaussian":
-            return add_gaussian_noise(clean_tensor)
+            return add_gaussian_noise(clean_tensor, self.sigma)
 
         if self.noise_type == "salt_pepper":
-            return add_salt_pepper_noise(clean_tensor)
+            return add_salt_pepper_noise(clean_tensor, self.salt_pepper_p)
 
         if self.noise_type == "occlusion":
-            return add_occlusion(clean_tensor)
+            return add_occlusion(clean_tensor, self.occlusion_size)
 
         raise ValueError(f"Unknown noise type: {self.noise_type}")
+
+    def _pad_to_even(self, img_tensor: tf.Tensor) -> tf.Tensor:
+        """Pads image so height and width are even numbers. (To fix odd image sizes)"""
+        height: tf.Tensor = tf.shape(img_tensor)[0]
+        width: tf.Tensor = tf.shape(img_tensor)[1]
+
+        pad_bottom: tf.Tensor = tf.math.floormod(height, 2)
+        pad_right: tf.Tensor = tf.math.floormod(width, 2)
+
+        paddings: tf.Tensor = tf.stack(
+            [
+                tf.stack(
+                    [tf.constant(0, dtype=tf.int32), tf.cast(pad_bottom, tf.int32)]
+                ),
+                tf.stack(
+                    [tf.constant(0, dtype=tf.int32), tf.cast(pad_right, tf.int32)]
+                ),
+                tf.constant([0, 0], dtype=tf.int32),
+            ]
+        )
+
+        return tf.pad(
+            img_tensor,
+            paddings=paddings,
+            mode="CONSTANT",
+            constant_values=0.0,
+        )
 
     def __getitem__(self, img_id: int) -> tuple[tf.Tensor, tf.Tensor]:
         """Returns a batch of noisy and clean images/patches"""
@@ -137,7 +164,7 @@ class Dataset(tf.keras.utils.Sequence):
             clean_tensor: tf.Tensor
 
             if self.return_full_image:
-                clean_tensor = img_tensor
+                clean_tensor = self._pad_to_even(img_tensor)
             else:
                 if self.training:
                     clean_tensor = self._random_crop(img_tensor)

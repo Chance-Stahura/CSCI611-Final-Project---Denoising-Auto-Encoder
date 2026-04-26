@@ -211,6 +211,9 @@ __marimo__/
 # Local Dataset
 data/
 
+# Local Model
+saved_models/
+
 # Local testing file - Chance
 #test to make sure Dataset class returns clean, noisy image pair
 src/test.py

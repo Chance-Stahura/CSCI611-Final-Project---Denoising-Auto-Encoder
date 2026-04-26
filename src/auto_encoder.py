@@ -38,6 +38,9 @@ FULL_IMAGE_INPUT_SHAPE: tuple[None, None, int] = (None, None, INPUT_CHANNELS)
 
 
 BASE_DIR: Path = Path(__file__).resolve().parents[2]
+SAVE_DIR: Path = BASE_DIR / "saved_models"
+SAVE_DIR.mkdir(exist_ok=True)
+
 
 cbsd68_img_folder: Path = download_dataset(TARGET_DIR_CBSD68)
 cbsd_ground_truth: Path = cbsd68_img_folder / "original_png"
@@ -105,34 +108,35 @@ def build_autoencoder(
 
 # NOTE: this code was adapted for the purpose of this project
 
+
 def build_dense_model(
-         input_shape: tuple[
+    input_shape: tuple[
         int | None,
         int | None,
         int,
     ] = TRAIN_INPUT_SHAPE,
 ) -> tf.keras.Model:
     """This will build the fully connected model."""
-                    # (64 x 64) x 3 = 12288
+    # (64 x 64) x 3 = 12288
     inputs = layers.Input(shape=input_shape)
 
     x = layers.Flatten()(inputs)
 
-    #encoder
-    encoded = layers.Dense(128, activation='relu')(x)
-    encoded = layers.Dense(64, activation='relu')(encoded)
-    encoded = layers.Dense(32, activation='relu')(encoded)
+    # encoder
+    encoded = layers.Dense(128, activation="relu")(x)
+    encoded = layers.Dense(64, activation="relu")(encoded)
+    encoded = layers.Dense(32, activation="relu")(encoded)
 
-    #decoder
-    decoded = layers.Dense(64, activation='relu')(encoded)
-    decoded = layers.Dense(128, activation='relu')(decoded)
-    decoded = layers.Dense(12288, activation='sigmoid')(decoded)
+    # decoder
+    decoded = layers.Dense(64, activation="relu")(encoded)
+    decoded = layers.Dense(128, activation="relu")(decoded)
+    decoded = layers.Dense(12288, activation="sigmoid")(decoded)
 
     output = layers.Reshape(input_shape)(decoded)
 
     return models.Model(inputs, output, name="dense_autoencoder")
 
-    
+
 def main() -> None:
     training_imgs: list[str] = build_image_set(bsd500_train)
     validation_imgs: list[str] = build_image_set(bsd500_val)
@@ -168,18 +172,21 @@ def main() -> None:
         shuffle=False,
     )
 
-    #this can work with multiple models
+    # this can work with multiple models
     models_to_run = {
         "denoising_autoencoder": build_autoencoder(),
         "dense_autoencoder": build_dense_model(input_shape=TRAIN_INPUT_SHAPE),
     }
 
-    for name, model, in models_to_run.items():
-        print(f"\n{'='*40}")
+    for (
+        name,
+        model,
+    ) in models_to_run.items():
+        print(f"\n{'=' * 40}")
         print(f" Running model: {name}")
-        print(f"{'='*40}\n")
+        print(f"{'=' * 40}\n")
 
-    #model: tf.keras.Model = build_autoencoder(input_shape=TRAIN_INPUT_SHAPE)
+        # model: tf.keras.Model = build_autoencoder(input_shape=TRAIN_INPUT_SHAPE)
 
         model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE),
@@ -195,11 +202,19 @@ def main() -> None:
             epochs=EPOCHS,
         )
 
+        model_save_path: Path = SAVE_DIR / f"{name}.keras"
+        model.save(model_save_path)
+        print(f"Saved model [{name}] to: {model_save_path}")
+
         if name == "denoising_autoencoder":
             full_image_model: tf.keras.Model = build_autoencoder(
                 input_shape=FULL_IMAGE_INPUT_SHAPE
             )
             full_image_model.set_weights(model.get_weights())
+
+            full_model_save_path: Path = SAVE_DIR / f"{name}_full_image.keras"
+            full_image_model.save(full_model_save_path)
+            print(f"Saved full-image model [{name}] to: {full_model_save_path}")
 
             full_image_model.compile(
                 optimizer=tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE),
@@ -211,7 +226,7 @@ def main() -> None:
             print(f"Test results: {test_results}")
         else:
             test_results = model.evaluate(test_ds)
-            print(f"Test results [{name}]: {test_results}") 
+            print(f"Test results [{name}]: {test_results}")
 
 
 if __name__ == "__main__":
