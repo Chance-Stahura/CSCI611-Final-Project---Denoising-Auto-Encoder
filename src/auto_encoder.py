@@ -99,6 +99,40 @@ def build_autoencoder(
     return models.Model(inputs, outputs, name="denoising_autoencoder")
 
 
+# This code is referenced from:
+# Omar Hankare: Autoencoders explained
+# Link: https://ompramod.medium.com/autoencoders-explained-9196c38af6f6
+
+# NOTE: this code was adapted for the purpose of this project
+
+def build_dense_model(
+         input_shape: tuple[
+        int | None,
+        int | None,
+        int,
+    ] = TRAIN_INPUT_SHAPE,
+) -> tf.keras.Model:
+    """This will build the fully connected model."""
+                    # (64 x 64) x 3 = 12288
+    inputs = layers.Input(shape=input_shape)
+
+    x = layers.Flatten()(inputs)
+
+    #encoder
+    encoded = layers.Dense(128, activation='relu')(x)
+    encoded = layers.Dense(64, activation='relu')(encoded)
+    encoded = layers.Dense(32, activation='relu')(encoded)
+
+    #decoder
+    decoded = layers.Dense(64, activation='relu')(encoded)
+    decoded = layers.Dense(128, activation='relu')(decoded)
+    decoded = layers.Dense(12288, activation='sigmoid')(decoded)
+
+    output = layers.Reshape(input_shape)(decoded)
+
+    return models.Model(inputs, output, name="dense_autoencoder")
+
+    
 def main() -> None:
     training_imgs: list[str] = build_image_set(bsd500_train)
     validation_imgs: list[str] = build_image_set(bsd500_val)
@@ -134,36 +168,50 @@ def main() -> None:
         shuffle=False,
     )
 
-    model: tf.keras.Model = build_autoencoder(input_shape=TRAIN_INPUT_SHAPE)
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE),
-        loss="mse",  # mean squared error
-        metrics=["mae"],  # mean absolute error
-    )
+    #this can work with multiple models
+    models_to_run = {
+        "denoising_autoencoder": build_autoencoder(),
+        "dense_autoencoder": build_dense_model(input_shape=TRAIN_INPUT_SHAPE),
+    }
 
-    model.summary()
+    for name, model, in models_to_run.items():
+        print(f"\n{'='*40}")
+        print(f" Running model: {name}")
+        print(f"{'='*40}\n")
 
-    model.fit(
-        train_ds,
-        validation_data=val_ds,
-        epochs=EPOCHS,
-    )
+    #model: tf.keras.Model = build_autoencoder(input_shape=TRAIN_INPUT_SHAPE)
 
-    full_image_model: tf.keras.Model = build_autoencoder(
-        input_shape=FULL_IMAGE_INPUT_SHAPE
-    )
-    full_image_model.set_weights(model.get_weights())
+        model.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE),
+            loss="mse",  # mean squared error
+            metrics=["mae"],  # mean absolute error
+        )
 
-    full_image_model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE),
-        loss="mse",  # mean squared error
-        metrics=["mae"],  # mean absolute error
-    )
+        model.summary()
 
-    test_results = full_image_model.evaluate(test_ds)
-    print(f"Test results: {test_results}")
+        model.fit(
+            train_ds,
+            validation_data=val_ds,
+            epochs=EPOCHS,
+        )
 
-    return
+        if name == "denoising_autoencoder":
+            full_image_model: tf.keras.Model = build_autoencoder(
+                input_shape=FULL_IMAGE_INPUT_SHAPE
+            )
+            full_image_model.set_weights(model.get_weights())
+
+            full_image_model.compile(
+                optimizer=tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE),
+                loss="mse",  # mean squared error
+                metrics=["mae"],  # mean absolute error
+            )
+
+            test_results = full_image_model.evaluate(test_ds)
+            print(f"Test results: {test_results}")
+        else:
+            test_results = model.evaluate(test_ds)
+            print(f"Test results [{name}]: {test_results}") 
 
 
 if __name__ == "__main__":
