@@ -24,7 +24,7 @@ VAL_BATCH_SIZE: int = 32
 TEST_BATCH_SIZE: int = 1
 
 LEARNING_RATE: float = 1e-3
-EPOCHS: int = 20
+EPOCHS: int = 3 # change back to 20
 
 INPUT_CHANNELS: int = 3
 FILTERS_STAGE_1: int = 64
@@ -194,6 +194,8 @@ def main() -> None:
             validation_data=val_ds,
             epochs=EPOCHS,
         )
+
+        model.save(f"./models/{name}.keras", overwrite = True)
 
         if name == "denoising_autoencoder":
             full_image_model: tf.keras.Model = build_autoencoder(

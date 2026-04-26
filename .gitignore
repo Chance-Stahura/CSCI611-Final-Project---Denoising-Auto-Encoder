@@ -214,3 +214,7 @@ data/
 # Local testing file - Chance
 #test to make sure Dataset class returns clean, noisy image pair
 src/test.py
+
+# we dont want our local testing models pushed up to repo
+models/*
+.keras
