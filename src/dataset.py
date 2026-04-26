@@ -37,6 +37,7 @@ class Dataset(tf.keras.utils.Sequence):
         patch_size: int = DEFAULT_PATCH_SIZE,
         sigma: int = DEFAULT_SIGMA,
         batch_size: int = DEFAULT_BATCH_SIZE,
+        pad_multiple: int = 2,
         training: bool = True,
         return_full_image: bool = False,
         shuffle: bool = True,
@@ -49,6 +50,7 @@ class Dataset(tf.keras.utils.Sequence):
         self.patch_size: int = patch_size
         self.sigma: float = sigma / PIXEL_SCALE
         self.batch_size: int = batch_size
+        self.pad_multiple: int = pad_multiple
         self.training: bool = training
         self.return_full_image: bool = return_full_image
         self.shuffle: bool = shuffle
@@ -118,13 +120,21 @@ class Dataset(tf.keras.utils.Sequence):
 
         raise ValueError(f"Unknown noise type: {self.noise_type}")
 
-    def _pad_to_even(self, img_tensor: tf.Tensor) -> tf.Tensor:
-        """Pads image so height and width are even numbers. (To fix odd image sizes)"""
+    def _pad_to_multiple(self, img_tensor: tf.Tensor) -> tf.Tensor:
+        """Pads image so height and width are multiples of self.pad_multiple."""
         height: tf.Tensor = tf.shape(img_tensor)[0]
         width: tf.Tensor = tf.shape(img_tensor)[1]
 
-        pad_bottom: tf.Tensor = tf.math.floormod(height, 2)
-        pad_right: tf.Tensor = tf.math.floormod(width, 2)
+        multiple: tf.Tensor = tf.constant(self.pad_multiple, dtype=tf.int32)
+
+        pad_bottom: tf.Tensor = tf.math.floormod(
+            multiple - tf.math.floormod(height, multiple),
+            multiple,
+        )
+        pad_right: tf.Tensor = tf.math.floormod(
+            multiple - tf.math.floormod(width, multiple),
+            multiple,
+        )
 
         paddings: tf.Tensor = tf.stack(
             [
@@ -164,7 +174,7 @@ class Dataset(tf.keras.utils.Sequence):
             clean_tensor: tf.Tensor
 
             if self.return_full_image:
-                clean_tensor = self._pad_to_even(img_tensor)
+                clean_tensor = self._pad_to_multiple(img_tensor)
             else:
                 if self.training:
                     clean_tensor = self._random_crop(img_tensor)

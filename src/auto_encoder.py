@@ -24,7 +24,7 @@ VAL_BATCH_SIZE: int = 32
 TEST_BATCH_SIZE: int = 1
 
 LEARNING_RATE: float = 1e-3
-EPOCHS: int = 20
+EPOCHS: int = 3  # change back to 20
 
 INPUT_CHANNELS: int = 3
 FILTERS_STAGE_1: int = 64
@@ -37,8 +37,8 @@ TRAIN_INPUT_SHAPE: tuple[int, int, int] = (PATCH_SIZE, PATCH_SIZE, INPUT_CHANNEL
 FULL_IMAGE_INPUT_SHAPE: tuple[None, None, int] = (None, None, INPUT_CHANNELS)
 
 
-BASE_DIR: Path = Path(__file__).resolve().parents[2]
-SAVE_DIR: Path = BASE_DIR / "saved_models"
+BASE_DIR: Path = Path(__file__).resolve().parents[1]
+SAVE_DIR: Path = BASE_DIR / "models"
 SAVE_DIR.mkdir(exist_ok=True)
 
 
@@ -102,6 +102,33 @@ def build_autoencoder(
     return models.Model(inputs, outputs, name="denoising_autoencoder")
 
 
+# Got help from ChatGPT on this one.
+def evaluate_full_image_dataset(
+    model: tf.keras.Model,
+    dataset: Dataset,
+) -> tuple[float, float]:
+    """Evaluates a full-image dataset one sample at a time."""
+    total_mse: float = 0.0
+    total_mae: float = 0.0
+    num_batches: int = len(dataset)
+
+    for i in range(num_batches):
+        noisy_batch, clean_batch = dataset[i]
+
+        predictions: tf.Tensor = model.predict(noisy_batch, verbose=0)
+
+        mse: float = tf.reduce_mean(tf.square(clean_batch - predictions)).numpy().item()
+        mae: float = tf.reduce_mean(tf.abs(clean_batch - predictions)).numpy().item()
+
+        total_mse += mse
+        total_mae += mae
+
+    avg_mse: float = total_mse / num_batches
+    avg_mae: float = total_mae / num_batches
+
+    return avg_mse, avg_mae
+
+
 # This code is referenced from:
 # Omar Hankare: Autoencoders explained
 # Link: https://ompramod.medium.com/autoencoders-explained-9196c38af6f6
@@ -162,7 +189,9 @@ def main() -> None:
         shuffle=False,
     )
 
-    test_ds = Dataset(
+    # Have 2 test datasets for patch and full image
+
+    test_patch_ds = Dataset(
         image_paths=test_imgs,
         patch_size=PATCH_SIZE,
         sigma=NOISE_SIGMA,
@@ -170,6 +199,17 @@ def main() -> None:
         training=False,
         return_full_image=False,
         shuffle=False,
+    )
+
+    test_full_ds = Dataset(
+        image_paths=test_imgs,
+        patch_size=PATCH_SIZE,
+        sigma=NOISE_SIGMA,
+        batch_size=TEST_BATCH_SIZE,
+        training=False,
+        return_full_image=True,
+        shuffle=False,
+        pad_multiple=2,
     )
 
     # this can work with multiple models
@@ -203,7 +243,7 @@ def main() -> None:
         )
 
         model_save_path: Path = SAVE_DIR / f"{name}.keras"
-        model.save(model_save_path)
+        model.save(model_save_path, overwrite=True)
         print(f"Saved model [{name}] to: {model_save_path}")
 
         if name == "denoising_autoencoder":
@@ -222,10 +262,12 @@ def main() -> None:
                 metrics=["mae"],  # mean absolute error
             )
 
-            test_results = full_image_model.evaluate(test_ds)
-            print(f"Test results: {test_results}")
+            avg_mse, avg_mae = evaluate_full_image_dataset(
+                full_image_model, test_full_ds
+            )
+            print(f"Test results [{name}]: [{avg_mse}, {avg_mae}]")
         else:
-            test_results = model.evaluate(test_ds)
+            test_results = model.evaluate(test_patch_ds)
             print(f"Test results [{name}]: {test_results}")
 
 

@@ -26,13 +26,13 @@ VALIDATION_BATCH_SIZE: int = 32
 TEST_BATCH_SIZE: int = 1
 
 LEARNING_RATE: float = 1e-3
-EPOCHS: int = 20
+EPOCHS: int = 3
 
 IMAGE_CHANNELS: int = 3
 
 
 BASE_DIR: Path = Path(__file__).resolve().parents[1]
-SAVE_DIR: Path = BASE_DIR / "saved_models"
+SAVE_DIR: Path = BASE_DIR / "models"
 SAVE_DIR.mkdir(exist_ok=True)
 MODEL_SAVE_PATH: Path = SAVE_DIR / "original_benchmark.keras"
 
@@ -120,6 +120,31 @@ def build_original_tf_benchmark_model(
     )
 
 
+def evaluate_full_image_dataset(
+    model: tf.keras.Model,
+    dataset: Dataset,
+) -> tuple[float, float]:
+    """Evaluates a full-image dataset one sample at a time."""
+    total_mse: float = 0.0
+    total_mae: float = 0.0
+    num_batches: int = len(dataset)
+
+    for i in range(num_batches):
+        noisy_batch, clean_batch = dataset[i]
+        predictions: tf.Tensor = model.predict(noisy_batch, verbose=0)
+
+        mse: float = tf.reduce_mean(tf.square(clean_batch - predictions)).numpy().item()
+        mae: float = tf.reduce_mean(tf.abs(clean_batch - predictions)).numpy().item()
+
+        total_mse += mse
+        total_mae += mae
+
+    avg_mse: float = total_mse / num_batches
+    avg_mae: float = total_mae / num_batches
+
+    return avg_mse, avg_mae
+
+
 def main() -> None:
     """The main code."""
     training_imgs: list[str] = build_image_set(bsd500_train)
@@ -148,7 +173,7 @@ def main() -> None:
         noise_type="gaussian",
     )
 
-    test_ds: Dataset = Dataset(
+    test_patch_ds: Dataset = Dataset(
         image_paths=test_imgs,
         patch_size=PATCH_SIZE,
         sigma=NOISE_SIGMA,
@@ -157,6 +182,18 @@ def main() -> None:
         return_full_image=False,
         shuffle=False,
         noise_type="gaussian",
+    )
+
+    test_full_ds: Dataset = Dataset(
+        image_paths=test_imgs,
+        patch_size=PATCH_SIZE,
+        sigma=NOISE_SIGMA,
+        batch_size=TEST_BATCH_SIZE,
+        training=False,
+        return_full_image=True,
+        shuffle=False,
+        noise_type="gaussian",
+        pad_multiple=4,
     )
 
     train_model: tf.keras.Model = build_original_tf_benchmark_model(
@@ -190,8 +227,11 @@ def main() -> None:
         metrics=["mae"],
     )
 
-    test_results = test_model.evaluate(test_ds)
-    print(f"Test results: {test_results}")
+    patch_test_results = train_model.evaluate(test_patch_ds)
+    print(f"Patch test results: {patch_test_results}")
+
+    full_avg_mse, full_avg_mae = evaluate_full_image_dataset(test_model, test_full_ds)
+    print(f"Full-image test results: [{full_avg_mse}, {full_avg_mae}]")
 
 
 if __name__ == "__main__":
