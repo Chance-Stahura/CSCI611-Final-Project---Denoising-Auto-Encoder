@@ -11,7 +11,7 @@ from tensorflow.keras import layers, models  # type: ignore
 import json
 
 from dataset import Dataset
-# to train all three models at one time 
+# to train all three models at one time
 from original_benchmark import build_original_tf_benchmark_model
 
 from download_dataset import (
@@ -247,13 +247,16 @@ def main() -> None:
         )
 
         history = model.fit(
-            train_ds, 
+            train_ds,
             validation_data=val_ds,
             epochs=EPOCHS
         )
 
-        #saves the history of each model for use in evaluate.py
-        #for plotting training/validation losses
+        histories_path: Path = BASE_DIR / "histories"
+        histories_path.mkdir(parents=True, exist_ok=True)
+
+        # saves the history of each model for use in evaluate.py
+        # for plotting training/validation losses
         with open(f"histories/{name}_history.json", "w") as f:
             json.dump(history.history, f)
 
