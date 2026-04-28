@@ -2,11 +2,13 @@ import tensorflow as tf
 import json
 import matplotlib
 import matplotlib.pyplot as plt
-from auto_encoder import build_image_set, evaluate_full_image_dataset, cbsd_ground_truth, PATCH_SIZE, NOISE_SIGMA, TEST_BATCH_SIZE
+from pathlib import Path
+from auto_encoder import build_image_set, evaluate_full_image_dataset, cbsd_ground_truth, PATCH_SIZE, NOISE_SIGMA, TEST_BATCH_SIZE, BASE_DIR
 from dataset import Dataset
 matplotlib.use('Agg')
 
 test_imgs = build_image_set(cbsd_ground_truth)
+
 test_full_ds = Dataset(
     image_paths=test_imgs,
     patch_size=PATCH_SIZE,
@@ -43,6 +45,9 @@ def compute_psnr(mse):
 
 psnr_scores = {}
 ssim_scores = {}
+
+outputs_path: Path = BASE_DIR / "outputs"
+outputs_path.mkdir(parents=True, exist_ok=True)
 
 # run evaluation/testing on CBSD68
 for name, model in models.items():
