@@ -8,8 +8,11 @@ from pathlib import Path
 
 import tensorflow as tf  # type: ignore
 from tensorflow.keras import layers, models  # type: ignore
+import json
 
 from dataset import Dataset
+# to train all three models at one time 
+from original_benchmark import build_original_tf_benchmark_model
 
 from download_dataset import (
     download_dataset,
@@ -216,6 +219,7 @@ def main() -> None:
     models_to_run = {
         "denoising_autoencoder": build_autoencoder(),
         "dense_autoencoder": build_dense_model(input_shape=TRAIN_INPUT_SHAPE),
+        "original_benchmark": build_original_tf_benchmark_model(input_shape=TRAIN_INPUT_SHAPE),
     }
 
     for (
@@ -241,6 +245,17 @@ def main() -> None:
             validation_data=val_ds,
             epochs=EPOCHS,
         )
+
+        history = model.fit(
+            train_ds, 
+            validation_data=val_ds,
+            epochs=EPOCHS
+        )
+
+        #saves the history of each model for use in evaluate.py
+        #for plotting training/validation losses
+        with open(f"histories/{name}_history.json", "w") as f:
+            json.dump(history.history, f)
 
         model_save_path: Path = SAVE_DIR / f"{name}.keras"
         model.save(model_save_path, overwrite=True)
