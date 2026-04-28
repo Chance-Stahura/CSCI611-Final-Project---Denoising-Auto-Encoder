@@ -36,7 +36,11 @@ our_model = tf.keras.models.load_model("models/denoising_autoencoder.keras")
 mlp_model = tf.keras.models.load_model("models/dense_autoencoder.keras")
 tf_model = tf.keras.models.load_model("models/original_benchmark.keras")
 
-models = {"denoising_autoencoder": our_model, "dense_autoencoder": mlp_model, "original_benchmark": tf_model}
+models = {
+    "denoising_autoencoder": our_model,
+    "dense_autoencoder": mlp_model,
+    "original_benchmark": tf_model
+}
 
 
 def compute_psnr(mse):

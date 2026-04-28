@@ -283,7 +283,7 @@ def model_process(
         full_image_model.set_weights(model.get_weights())
 
         full_model_save_path: Path = (
-            SAVE_DIR / f"{name}_{experiment_name}_full_image.keras"
+            SAVE_DIR / f"{name}_full_image_{experiment_name}.keras"
         )
         full_image_model.save(full_model_save_path)
         print(
