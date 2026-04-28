@@ -13,7 +13,7 @@ import json
 from dataset import Dataset
 
 # to train all three models at one time
-# from original_benchmark import build_original_tf_benchmark_model
+from original_benchmark import build_original_tf_benchmark_model
 
 from download_dataset import (
     download_dataset,
@@ -232,74 +232,73 @@ def model_process(
     )
 
     # this can work with multiple models
-    # models_to_run = {
-    #     "denoising_autoencoder": build_autoencoder(),
-    #     "dense_autoencoder": build_dense_model(input_shape=TRAIN_INPUT_SHAPE),
-    #     "original_benchmark": build_original_tf_benchmark_model(
-    #         input_shape=TRAIN_INPUT_SHAPE
-    #     ),
-    # }
+    models_to_run = {
+        "denoising_autoencoder": build_autoencoder(),
+        "dense_autoencoder": build_dense_model(input_shape=TRAIN_INPUT_SHAPE),
+        "original_benchmark": build_original_tf_benchmark_model(
+            input_shape=TRAIN_INPUT_SHAPE
+        ),
+    }
 
-    # for (
-    #    name,
-    #    model,
-    # ) in models_to_run.items():
+    for (
+        name,
+        model,
+    ) in models_to_run.items():
 
-    model = build_autoencoder()
-    name = model_name
+        print(f"\n{'=' * 40}")
+        print(f" Running model: {experiment_name}_{name}")
+        print(f"{'=' * 40}\n")
 
-    print(f"\n{'=' * 40}")
-    print(f" Running model: {name}")
-    print(f"{'=' * 40}\n")
+        # model: tf.keras.Model = build_autoencoder(input_shape=TRAIN_INPUT_SHAPE)
 
-    # model: tf.keras.Model = build_autoencoder(input_shape=TRAIN_INPUT_SHAPE)
+        model.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE),
+            loss="mse",  # mean squared error
+            metrics=["mae"],  # mean absolute error
+        )
 
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE),
-        loss="mse",  # mean squared error
-        metrics=["mae"],  # mean absolute error
-    )
+        model.summary()
 
-    model.summary()
+        history = model.fit(train_ds, validation_data=val_ds, epochs=epochs)
 
-    model.fit(train_ds, validation_data=val_ds, epochs=epochs)
+        histories_path: Path = BASE_DIR / "histories"
+        histories_path.mkdir(parents=True, exist_ok=True)
 
-    history = model.fit(train_ds, validation_data=val_ds, epochs=epochs)
+        # saves the history of each model for use in evaluate.py
+        # for plotting training/validation losses
+        with open(f"histories/{experiment_name}_{name}_history.json", "w") as f:
+            json.dump(history.history, f)
 
-    histories_path: Path = BASE_DIR / "histories"
-    histories_path.mkdir(parents=True, exist_ok=True)
+        model_save_path: Path = SAVE_DIR / f"{experiment_name}_{name}.keras"
+        model.save(model_save_path, overwrite=True)
+        print(f"Saved model [{experiment_name}_{name}] to: {model_save_path}")
 
-    # saves the history of each model for use in evaluate.py
-    # for plotting training/validation losses
-    with open(f"histories/{name}_history.json", "w") as f:
-        json.dump(history.history, f)
+        if name != "denoising_autoencoder":
+            test_results = model.evaluate(test_patch_ds)
+            print(f"Test results [{experiment_name}_{name}]: {test_results}")
+            continue
 
-    model_save_path: Path = SAVE_DIR / f"{name}.keras"
-    model.save(model_save_path, overwrite=True)
-    print(f"Saved model [{name}] to: {model_save_path}")
+        full_image_model: tf.keras.Model = build_autoencoder(
+            input_shape=FULL_IMAGE_INPUT_SHAPE
+        )
+        full_image_model.set_weights(model.get_weights())
 
-    if name != "denoising_autoencoder":
-        test_results = model.evaluate(test_patch_ds)
-        print(f"Test results [{name}]: {test_results}")
-        return
+        full_model_save_path: Path = (
+            SAVE_DIR / f"{experiment_name}_{name}_full_image.keras"
+        )
+        full_image_model.save(full_model_save_path)
+        print(
+            f"Saved full-image model [{experiment_name}_{name}] to: {full_model_save_path}"
+        )
 
-    full_image_model: tf.keras.Model = build_autoencoder(
-        input_shape=FULL_IMAGE_INPUT_SHAPE
-    )
-    full_image_model.set_weights(model.get_weights())
+        full_image_model.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE),
+            loss="mse",  # mean squared error
+            metrics=["mae"],  # mean absolute error
+        )
 
-    full_model_save_path: Path = SAVE_DIR / f"{name}_full_image.keras"
-    full_image_model.save(full_model_save_path)
-    print(f"Saved full-image model [{name}] to: {full_model_save_path}")
-
-    full_image_model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE),
-        loss="mse",  # mean squared error
-        metrics=["mae"],  # mean absolute error
-    )
-
-    avg_mse, avg_mae = evaluate_full_image_dataset(full_image_model, test_full_ds)
-    print(f"Test results [{name}]: [{avg_mse}, {avg_mae}]")
+        avg_mse, avg_mae = evaluate_full_image_dataset(full_image_model, test_full_ds)
+        print(f"Test results [{experiment_name}_{name}]: [{avg_mse}, {avg_mae}]")
 
 
 if __name__ == "__main__":
