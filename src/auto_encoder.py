@@ -11,6 +11,7 @@ from tensorflow.keras import layers, models  # type: ignore
 import json
 
 from dataset import Dataset
+
 # to train all three models at one time
 from original_benchmark import build_original_tf_benchmark_model
 
@@ -41,6 +42,7 @@ FULL_IMAGE_INPUT_SHAPE: tuple[None, None, int] = (None, None, INPUT_CHANNELS)
 
 
 BASE_DIR: Path = Path(__file__).resolve().parents[1]
+
 SAVE_DIR: Path = BASE_DIR / "models"
 SAVE_DIR.mkdir(exist_ok=True)
 
@@ -167,7 +169,10 @@ def build_dense_model(
     return models.Model(inputs, output, name="dense_autoencoder")
 
 
-def main() -> None:
+def model_process() -> None:
+    """This will build the auto_encoder model."""
+    tf.random.set_seed(42)
+
     training_imgs: list[str] = build_image_set(bsd500_train)
     validation_imgs: list[str] = build_image_set(bsd500_val)
     test_imgs: list[str] = build_image_set(cbsd_ground_truth)
@@ -219,7 +224,9 @@ def main() -> None:
     models_to_run = {
         "denoising_autoencoder": build_autoencoder(),
         "dense_autoencoder": build_dense_model(input_shape=TRAIN_INPUT_SHAPE),
-        "original_benchmark": build_original_tf_benchmark_model(input_shape=TRAIN_INPUT_SHAPE),
+        "original_benchmark": build_original_tf_benchmark_model(
+            input_shape=TRAIN_INPUT_SHAPE
+        ),
     }
 
     for (
@@ -246,11 +253,7 @@ def main() -> None:
             epochs=EPOCHS,
         )
 
-        history = model.fit(
-            train_ds,
-            validation_data=val_ds,
-            epochs=EPOCHS
-        )
+        history = model.fit(train_ds, validation_data=val_ds, epochs=EPOCHS)
 
         histories_path: Path = BASE_DIR / "histories"
         histories_path.mkdir(parents=True, exist_ok=True)
@@ -290,4 +293,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    model_process()
