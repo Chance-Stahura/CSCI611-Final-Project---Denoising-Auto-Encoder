@@ -36,7 +36,6 @@ def main() -> None:
                 config = load(json_file)
 
             experiment_name: str = config["experiment"]["name"]
-            model_name: str = config["model"]["architecture"]
             noise_type: str = config["noise"]["type"]
             sigma: int = config["noise"]["sigma"]
             epochs: int = config["training"]["epochs"]
@@ -45,7 +44,6 @@ def main() -> None:
             print(f"Currently runnning with: {path}")
             model_process(
                 experiment_name=experiment_name,
-                model_name=model_name,
                 noise_type=noise_type,
                 sigma=sigma,
                 epochs=epochs,

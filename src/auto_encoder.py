@@ -171,7 +171,6 @@ def build_dense_model(
 
 def model_process(
     experiment_name: str = "default",
-    model_name: str = "cnn",
     noise_type: str = "gaussian",
     sigma: int = NOISE_SIGMA,
     epochs: int = EPOCHS,
@@ -246,7 +245,7 @@ def model_process(
     ) in models_to_run.items():
 
         print(f"\n{'=' * 40}")
-        print(f" Running model: {experiment_name}_{name}")
+        print(f" Running model: {name}_{experiment_name}")
         print(f"{'=' * 40}\n")
 
         # model: tf.keras.Model = build_autoencoder(input_shape=TRAIN_INPUT_SHAPE)
@@ -266,16 +265,16 @@ def model_process(
 
         # saves the history of each model for use in evaluate.py
         # for plotting training/validation losses
-        with open(f"histories/{experiment_name}_{name}_history.json", "w") as f:
+        with open(f"histories/{name}_{experiment_name}_history.json", "w") as f:
             json.dump(history.history, f)
 
-        model_save_path: Path = SAVE_DIR / f"{experiment_name}_{name}.keras"
+        model_save_path: Path = SAVE_DIR / f"{name}_{experiment_name}.keras"
         model.save(model_save_path, overwrite=True)
-        print(f"Saved model [{experiment_name}_{name}] to: {model_save_path}")
+        print(f"Saved model [{name}_{experiment_name}] to: {model_save_path}")
 
         if name != "denoising_autoencoder":
             test_results = model.evaluate(test_patch_ds)
-            print(f"Test results [{experiment_name}_{name}]: {test_results}")
+            print(f"Test results [{name}_{experiment_name}]: {test_results}")
             continue
 
         full_image_model: tf.keras.Model = build_autoencoder(
@@ -284,11 +283,11 @@ def model_process(
         full_image_model.set_weights(model.get_weights())
 
         full_model_save_path: Path = (
-            SAVE_DIR / f"{experiment_name}_{name}_full_image.keras"
+            SAVE_DIR / f"{name}_{experiment_name}_full_image.keras"
         )
         full_image_model.save(full_model_save_path)
         print(
-            f"Saved full-image model [{experiment_name}_{name}] to: {full_model_save_path}"
+            f"Saved full-image model [{name}_{experiment_name}] to: {full_model_save_path}"
         )
 
         full_image_model.compile(
@@ -298,7 +297,7 @@ def model_process(
         )
 
         avg_mse, avg_mae = evaluate_full_image_dataset(full_image_model, test_full_ds)
-        print(f"Test results [{experiment_name}_{name}]: [{avg_mse}, {avg_mae}]")
+        print(f"Test results [{name}_{experiment_name}]: [{avg_mse}, {avg_mae}]")
 
 
 if __name__ == "__main__":
