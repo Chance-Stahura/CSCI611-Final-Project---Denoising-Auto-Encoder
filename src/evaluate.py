@@ -1,10 +1,10 @@
 import tensorflow as tf
 import json
 import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from auto_encoder import build_autoencoder, build_dense_model, build_image_set, evaluate_full_image_dataset, cbsd68_img_folder, cbsd_ground_truth, PATCH_SIZE, NOISE_SIGMA, TEST_BATCH_SIZE
+from auto_encoder import build_image_set, evaluate_full_image_dataset, cbsd_ground_truth, PATCH_SIZE, NOISE_SIGMA, TEST_BATCH_SIZE
 from dataset import Dataset
+matplotlib.use('Agg')
 
 test_imgs = build_image_set(cbsd_ground_truth)
 test_full_ds = Dataset(
@@ -20,14 +20,14 @@ test_full_ds = Dataset(
 )
 
 test_patch_ds = Dataset(
-        image_paths=test_imgs,
-        patch_size=PATCH_SIZE,
-        sigma=NOISE_SIGMA,
-        batch_size=TEST_BATCH_SIZE,
-        training=False,
-        return_full_image=False,
-        shuffle=False,
-    )
+    image_paths=test_imgs,
+    patch_size=PATCH_SIZE,
+    sigma=NOISE_SIGMA,
+    batch_size=TEST_BATCH_SIZE,
+    training=False,
+    return_full_image=False,
+    shuffle=False,
+)
 
 # load each model
 our_model = tf.keras.models.load_model("models/denoising_autoencoder.keras")
@@ -36,8 +36,10 @@ tf_model = tf.keras.models.load_model("models/original_benchmark.keras")
 
 models = {"denoising_autoencoder": our_model, "dense_autoencoder": mlp_model, "original_benchmark": tf_model}
 
+
 def compute_psnr(mse):
-    return 10 * tf.math.log(1.0/mse) / tf.math.log(10.0)
+    return 10 * tf.math.log(1.0 / mse) / tf.math.log(10.0)
+
 
 psnr_scores = {}
 ssim_scores = {}
@@ -45,7 +47,7 @@ ssim_scores = {}
 # run evaluation/testing on CBSD68
 for name, model in models.items():
 
-    #dense model + benchmark are not meant to handle full images
+    # dense model + benchmark are not meant to handle full images
     if name == "dense_autoencoder" or name == "original_benchmark":
         avg_mse, avg_mae = evaluate_full_image_dataset(model, test_patch_ds)
         noisy_batch, clean_batch = test_patch_ds[0]
@@ -56,7 +58,7 @@ for name, model in models.items():
     psnr = compute_psnr(avg_mse)
     psnr_scores[name] = psnr.numpy()
     predictions = model(noisy_batch)
-    ssim = tf.image.ssim(clean_batch, predictions, max_val = 1.0)
+    ssim = tf.image.ssim(clean_batch, predictions, max_val=1.0)
     ssim_scores[name] = tf.reduce_mean(ssim).numpy()
 
     # generate comparison grids: 
