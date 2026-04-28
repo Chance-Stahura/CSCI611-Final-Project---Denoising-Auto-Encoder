@@ -61,7 +61,7 @@ for name, model in models.items():
     ssim = tf.image.ssim(clean_batch, predictions, max_val=1.0)
     ssim_scores[name] = tf.reduce_mean(ssim).numpy()
 
-    # generate comparison grids: 
+    # generate comparison grids:
     # noisy input -> model output -> ground truth
     fix, axes = plt.subplots(1, 3)
     plt.suptitle(f"{name} Denoising Comparison")
