@@ -27,7 +27,7 @@ VAL_BATCH_SIZE: int = 32
 TEST_BATCH_SIZE: int = 1
 
 LEARNING_RATE: float = 1e-3
-EPOCHS: int = 3  # change back to 20
+EPOCHS: int = 6  # change back to 20
 
 INPUT_CHANNELS: int = 3
 FILTERS_STAGE_1: int = 64
@@ -105,7 +105,6 @@ def build_autoencoder(
     return models.Model(inputs, outputs, name="denoising_autoencoder")
 
 
-# Got help from ChatGPT on this one.
 def evaluate_full_image_dataset(
     model: tf.keras.Model,
     dataset: Dataset,
@@ -137,7 +136,6 @@ def evaluate_full_image_dataset(
 # Link: https://ompramod.medium.com/autoencoders-explained-9196c38af6f6
 
 # NOTE: this code was adapted for the purpose of this project
-
 
 def build_dense_model(
     input_shape: tuple[
@@ -192,29 +190,6 @@ def main() -> None:
         shuffle=False,
     )
 
-    # Have 2 test datasets for patch and full image
-
-    test_patch_ds = Dataset(
-        image_paths=test_imgs,
-        patch_size=PATCH_SIZE,
-        sigma=NOISE_SIGMA,
-        batch_size=TEST_BATCH_SIZE,
-        training=False,
-        return_full_image=False,
-        shuffle=False,
-    )
-
-    test_full_ds = Dataset(
-        image_paths=test_imgs,
-        patch_size=PATCH_SIZE,
-        sigma=NOISE_SIGMA,
-        batch_size=TEST_BATCH_SIZE,
-        training=False,
-        return_full_image=True,
-        shuffle=False,
-        pad_multiple=2,
-    )
-
     # this can work with multiple models
     models_to_run = {
         "denoising_autoencoder": build_autoencoder(),
@@ -230,8 +205,6 @@ def main() -> None:
         print(f" Running model: {name}")
         print(f"{'=' * 40}\n")
 
-        # model: tf.keras.Model = build_autoencoder(input_shape=TRAIN_INPUT_SHAPE)
-
         model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE),
             loss="mse",  # mean squared error
@@ -239,12 +212,6 @@ def main() -> None:
         )
 
         model.summary()
-
-        model.fit(
-            train_ds,
-            validation_data=val_ds,
-            epochs=EPOCHS,
-        )
 
         history = model.fit(
             train_ds,
@@ -257,36 +224,12 @@ def main() -> None:
 
         # saves the history of each model for use in evaluate.py
         # for plotting training/validation losses
-        with open(f"histories/{name}_history.json", "w") as f:
+        with open(histories_path/f"{name}_history.json", "w") as f:
             json.dump(history.history, f)
 
         model_save_path: Path = SAVE_DIR / f"{name}.keras"
         model.save(model_save_path, overwrite=True)
         print(f"Saved model [{name}] to: {model_save_path}")
-
-        if name == "denoising_autoencoder":
-            full_image_model: tf.keras.Model = build_autoencoder(
-                input_shape=FULL_IMAGE_INPUT_SHAPE
-            )
-            full_image_model.set_weights(model.get_weights())
-
-            full_model_save_path: Path = SAVE_DIR / f"{name}_full_image.keras"
-            full_image_model.save(full_model_save_path)
-            print(f"Saved full-image model [{name}] to: {full_model_save_path}")
-
-            full_image_model.compile(
-                optimizer=tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE),
-                loss="mse",  # mean squared error
-                metrics=["mae"],  # mean absolute error
-            )
-
-            avg_mse, avg_mae = evaluate_full_image_dataset(
-                full_image_model, test_full_ds
-            )
-            print(f"Test results [{name}]: [{avg_mse}, {avg_mae}]")
-        else:
-            test_results = model.evaluate(test_patch_ds)
-            print(f"Test results [{name}]: {test_results}")
 
 
 if __name__ == "__main__":
