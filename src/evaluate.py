@@ -59,6 +59,9 @@ def reconstruct_full_image(model, noisy_img: np.ndarray, patch_size: int = 64) -
 
 def evaluate(experiment = str) -> None:
 
+    EXPERIMENT_DIR: Path = METRICS_DIR / experiment
+    EXPERIMENT_DIR.mkdir(parents=True, exist_ok=True)
+
     our_model = tf.keras.models.load_model(f"outputs/denoise/{experiment}.keras")
     mlp_model = tf.keras.models.load_model(f"outputs/dense/{experiment}.keras")
     tf_model = tf.keras.models.load_model(f"outputs/benchmark/{experiment}.keras")
@@ -132,7 +135,7 @@ def evaluate(experiment = str) -> None:
         axes[2].imshow(clean_batch[0])
         axes[2].set_title("Clean")
         axes[2].axis('off')
-        plt.savefig(METRICS_DIR/f"{experiment}_{name}_comparison.png")
+        plt.savefig(EXPERIMENT_DIR/f"{name}_comparison.png")
         plt.close()
 
         # plot training loss curves per model
@@ -144,19 +147,19 @@ def evaluate(experiment = str) -> None:
         plt.xlabel("Epoch")
         plt.ylabel("Loss")
         plt.legend()
-        plt.savefig(METRICS_DIR/f"{experiment}_{name_out}_loss.png")
+        plt.savefig(EXPERIMENT_DIR/f"{name_out}_loss.png")
         plt.close()
 
     # save bar chart comparing PSNR/SSIM for all models
     plt.bar(psnr_scores.keys(), psnr_scores.values())
     plt.title("Peak Signal-to-Noise Ratio (PSNR)")
     plt.ylabel("dB")
-    plt.savefig(METRICS_DIR/"psnr_comparison.png")
+    plt.savefig(EXPERIMENT_DIR/"psnr_comparison.png")
     plt.close()
     plt.bar(ssim_scores.keys(), ssim_scores.values())
     plt.title("Structural Similarity Index Measure (SSIM)")
     plt.ylabel("Score (0-1)")
-    plt.savefig(METRICS_DIR/f"{experiment}_ssim_comparison.png")
+    plt.savefig(EXPERIMENT_DIR/"ssim_comparison.png")
     plt.close()
 
     return None
