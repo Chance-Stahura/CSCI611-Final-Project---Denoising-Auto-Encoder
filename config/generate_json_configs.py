@@ -2,20 +2,17 @@ import json
 from pathlib import Path
 from itertools import product
 
-
 # NOTE: adjust lists according to desired output
 config = {
-    "experiment": {
-        "name": "<noise_type>_<sigma_val>_<epoch_val>_<dataset>"
-    },
+    "experiment": {"name": "<noise_type>_<sigma_val>_<epoch_val>_<dataset>"},
     "noise": {
-        "type": ["gaussian", "saltnpepper", "occlusion"],
-        "sigma": [5, 10, 15, 20, 25]
+        "type": ["gaussian", "salt_pepper", "occlusion"],
+        "sigma": [5, 10, 15, 20, 25],
     },
     "training": {
         "epochs": 5,  # [5, 10, 20],
         "dataset": "cbsd68",  # ["cbsd68", "bsds500", "waterloo"]
-    }
+    },
 }
 
 

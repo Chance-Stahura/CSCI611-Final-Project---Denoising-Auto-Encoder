@@ -10,7 +10,11 @@ import tensorflow as tf  # type: ignore
 from tensorflow.keras import layers, models  # type: ignore
 import json
 
-from dataset import Dataset
+from dataset import (
+    Dataset,
+    DEFAULT_SALT_PEPPER_P,
+    DEFAULT_OCCLUSION_SIZE,
+)
 
 # to train all three models at one time
 from original_benchmark import build_original_tf_benchmark_model
@@ -43,12 +47,25 @@ FULL_IMAGE_INPUT_SHAPE: tuple[None, None, int] = (None, None, INPUT_CHANNELS)
 
 BASE_DIR: Path = Path(__file__).resolve().parents[1]
 
-SAVE_DIR: Path = BASE_DIR / "models"
-SAVE_DIR.mkdir(exist_ok=True)
+OUTPUTS_DIR: Path = BASE_DIR / "outputs"
+OUTPUTS_DIR.mkdir(exist_ok=True)
 
-HISTORIES_PATH: Path = BASE_DIR / "histories"
-HISTORIES_PATH.mkdir(parents=True, exist_ok=True)
+DENOISE_DIR: Path = OUTPUTS_DIR / "denoise"
+DENOISE_DIR.mkdir(parents=True, exist_ok=True)
 
+DENOISE_FULL_DIR: Path = OUTPUTS_DIR / "denoise_full"
+DENOISE_FULL_DIR.mkdir(parents=True, exist_ok=True)
+
+DENSE_DIR: Path = OUTPUTS_DIR / "dense"
+DENSE_DIR.mkdir(parents=True, exist_ok=True)
+
+BENCHMARK_DIR: Path = OUTPUTS_DIR / "benchmark"
+BENCHMARK_DIR.mkdir(parents=True, exist_ok=True)
+
+(DENOISE_DIR / "histories").mkdir(parents=True, exist_ok=True)
+(DENOISE_FULL_DIR / "histories").mkdir(parents=True, exist_ok=True)
+(DENSE_DIR / "histories").mkdir(parents=True, exist_ok=True)
+(BENCHMARK_DIR / "histories").mkdir(parents=True, exist_ok=True)
 
 cbsd68_img_folder: Path = download_dataset(TARGET_DIR_CBSD68)
 cbsd_ground_truth: Path = cbsd68_img_folder / "original_png"
@@ -171,12 +188,28 @@ def build_dense_model(
     return models.Model(inputs, output, name="dense_autoencoder")
 
 
+def get_model_output_dir(model_key: str) -> Path:
+    """Returns the output directory for a given model key."""
+    if model_key == "denoising_autoencoder":
+        return DENOISE_DIR
+    if model_key == "denoising_autoencoder_full":
+        return DENOISE_FULL_DIR
+    if model_key == "dense_autoencoder":
+        return DENSE_DIR
+    if model_key == "original_benchmark":
+        return BENCHMARK_DIR
+
+    raise ValueError(f"Unknown model key: {model_key}")
+
+
 def model_process(
     experiment_name: str = "default",
     noise_type: str = "gaussian",
     sigma: int = NOISE_SIGMA,
     epochs: int = EPOCHS,
     dataset: str = "cbsd68",
+    salt_pepper_p: float = DEFAULT_SALT_PEPPER_P,
+    occlusion_size: int = DEFAULT_OCCLUSION_SIZE,
 ) -> None:
     """This will build the auto_encoder model."""
     tf.random.set_seed(42)
@@ -194,6 +227,8 @@ def model_process(
         training=True,
         return_full_image=False,
         shuffle=True,
+        salt_pepper_p=salt_pepper_p,
+        occlusion_size=occlusion_size,
     )
 
     val_ds = Dataset(
@@ -205,6 +240,8 @@ def model_process(
         training=False,
         return_full_image=False,
         shuffle=False,
+        salt_pepper_p=salt_pepper_p,
+        occlusion_size=occlusion_size,
     )
 
     # Have 2 test datasets for patch and full image
@@ -218,6 +255,8 @@ def model_process(
         training=False,
         return_full_image=False,
         shuffle=False,
+        salt_pepper_p=salt_pepper_p,
+        occlusion_size=occlusion_size,
     )
 
     test_full_ds = Dataset(
@@ -230,6 +269,8 @@ def model_process(
         return_full_image=True,
         shuffle=False,
         pad_multiple=2,
+        salt_pepper_p=salt_pepper_p,
+        occlusion_size=occlusion_size,
     )
 
     # this can work with multiple models
@@ -258,16 +299,20 @@ def model_process(
 
         model.summary()
 
-        history = model.fit(train_ds, validation_data=val_ds, epochs=EPOCHS)
+        history = model.fit(train_ds, validation_data=val_ds, epochs=epochs)
+
+        model_dir: Path = get_model_output_dir(name)
+        model_save_path: Path = model_dir / f"{experiment_name}.keras"
+        model.save(model_save_path, overwrite=True)
+        print(f"Saved model [{name}_{experiment_name}] to: {model_save_path}")
 
         # saves the history of each model for use in evaluate.py
         # for plotting training/validation losses
-        with open(HISTORIES_PATH / f"{name}_history.json", "w", encoding="utf-8") as f:
-            json.dump(history.history, f)
+        history_dir: Path = model_dir / "histories"
+        history_path: Path = history_dir / f"{experiment_name}_history.json"
 
-        model_save_path: Path = SAVE_DIR / f"{name}_{experiment_name}.keras"
-        model.save(model_save_path, overwrite=True)
-        print(f"Saved model [{name}_{experiment_name}] to: {model_save_path}")
+        with history_path.open("w", encoding="utf-8") as f:
+            json.dump(history.history, f)
 
         if name != "denoising_autoencoder":
             test_results = model.evaluate(test_patch_ds)
@@ -279,9 +324,8 @@ def model_process(
         )
         full_image_model.set_weights(model.get_weights())
 
-        full_model_save_path: Path = (
-            SAVE_DIR / f"{name}_full_image_{experiment_name}.keras"
-        )
+        full_model_dir: Path = get_model_output_dir("denoising_autoencoder_full")
+        full_model_save_path: Path = full_model_dir / f"{experiment_name}.keras"
         full_image_model.save(full_model_save_path)
         print(
             f"Saved full-image model [{name}_{experiment_name}] to: {full_model_save_path}"

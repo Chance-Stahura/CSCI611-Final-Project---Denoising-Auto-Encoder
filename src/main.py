@@ -8,6 +8,11 @@ from pathlib import Path
 from shutil import move
 
 from auto_encoder import model_process
+from dataset import (
+    DEFAULT_SIGMA,
+    DEFAULT_SALT_PEPPER_P,
+    DEFAULT_OCCLUSION_SIZE,
+)
 
 BASE_DIR: Path = Path(__file__).resolve().parents[1]
 
@@ -37,7 +42,18 @@ def main() -> None:
 
             experiment_name: str = config["experiment"]["name"]
             noise_type: str = config["noise"]["type"]
-            sigma: int = config["noise"]["sigma"]
+
+            sigma: int = DEFAULT_SIGMA
+            salt_pepper_p: float = DEFAULT_SALT_PEPPER_P
+            occlusion_size: int = DEFAULT_OCCLUSION_SIZE
+
+            if noise_type == "gaussian":
+                sigma: int = config["noise"]["sigma"]
+            elif noise_type == "salt_pepper":
+                salt_pepper_p: float = config["noise"]["sigma"]
+            elif noise_type == "occlusion":
+                occlusion_size: int = config["noise"]["sigma"]
+
             epochs: int = config["training"]["epochs"]
             dataset: str = config["training"]["dataset"]
 
@@ -48,6 +64,8 @@ def main() -> None:
                 sigma=sigma,
                 epochs=epochs,
                 dataset=dataset,
+                salt_pepper_p=salt_pepper_p,
+                occlusion_size=occlusion_size,
             )
 
             print(f"Done with: {path}")
