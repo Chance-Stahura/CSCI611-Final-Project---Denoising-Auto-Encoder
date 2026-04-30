@@ -222,3 +222,4 @@ src/test.py
 outputs/*
 config/*.json
 config/done/*.json
+metrics/
