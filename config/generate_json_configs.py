@@ -6,9 +6,9 @@ OUTPUT_DIR: Path = Path(__file__).resolve().parent
 EPOCHS: list[int] = [5]
 DATASETS: list[str] = ["cbsd68"]
 
-SIGMA_VALUES: list[int] = [4, 10, 15, 20, 25]
-P_VALUES: list[float] = [0.1, 0.2, 0.3, 0.4, 0.5]
-SIZE_VALUES: list[int] = [4, 10, 15, 20, 25]
+SIGMA_VALUES: list[int] = [5, 10, 15, 20, 25, 35, 50]
+P_VALUES: list[float] = [0.01, 0.02, 0.05, 0.1, 0.2, 0.3]
+SIZE_VALUES: list[int] = [8, 12, 16, 24, 32]
 
 
 def write_config(config: dict, output_dir: Path) -> None:
