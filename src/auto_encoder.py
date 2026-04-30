@@ -28,7 +28,7 @@ VAL_BATCH_SIZE: int = 32
 TEST_BATCH_SIZE: int = 1
 
 LEARNING_RATE: float = 1e-3
-EPOCHS: int = 3  # change back to 20
+EPOCHS: int = 6  # change back to 20
 
 INPUT_CHANNELS: int = 3
 FILTERS_STAGE_1: int = 64
@@ -107,7 +107,6 @@ def build_autoencoder(
     return models.Model(inputs, outputs, name="denoising_autoencoder")
 
 
-# Got help from ChatGPT on this one.
 def evaluate_full_image_dataset(
     model: tf.keras.Model,
     dataset: Dataset,
@@ -139,7 +138,6 @@ def evaluate_full_image_dataset(
 # Link: https://ompramod.medium.com/autoencoders-explained-9196c38af6f6
 
 # NOTE: this code was adapted for the purpose of this project
-
 
 def build_dense_model(
     input_shape: tuple[
@@ -248,8 +246,6 @@ def model_process(
         print(f" Running model: {name}_{experiment_name}")
         print(f"{'=' * 40}\n")
 
-        # model: tf.keras.Model = build_autoencoder(input_shape=TRAIN_INPUT_SHAPE)
-
         model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE),
             loss="mse",  # mean squared error
@@ -258,14 +254,18 @@ def model_process(
 
         model.summary()
 
-        history = model.fit(train_ds, validation_data=val_ds, epochs=epochs)
+        history = model.fit(
+            train_ds,
+            validation_data=val_ds,
+            epochs=EPOCHS
+        )
 
         histories_path: Path = BASE_DIR / "histories"
         histories_path.mkdir(parents=True, exist_ok=True)
 
         # saves the history of each model for use in evaluate.py
         # for plotting training/validation losses
-        with open(f"histories/{name}_{experiment_name}_history.json", "w") as f:
+        with open(histories_path/f"{name}_history.json", "w") as f:
             json.dump(history.history, f)
 
         model_save_path: Path = SAVE_DIR / f"{name}_{experiment_name}.keras"
