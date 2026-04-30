@@ -51,9 +51,9 @@ def main() -> None:
             if noise_type == "gaussian":
                 sigma: int = config["noise"]["sigma"]
             elif noise_type == "salt_pepper":
-                salt_pepper_p: float = config["noise"]["sigma"]
+                salt_pepper_p: float = config["noise"]["p"]
             elif noise_type == "occlusion":
-                occlusion_size: int = config["noise"]["sigma"]
+                occlusion_size: int = config["noise"]["size"]
 
             epochs: int = config["training"]["epochs"]
             dataset: str = config["training"]["dataset"]
@@ -73,7 +73,13 @@ def main() -> None:
             )
 
             print("\n>>> Evaluating experiment models...\n")
-            evaluate(experiment_name)
+            evaluate(
+                experiment_name,
+                noise_type=noise_type,
+                sigma=sigma,
+                salt_pepper_p=salt_pepper_p,
+                occlusion_size=occlusion_size,
+            )
 
             print(f"Done with experiment: {path}")
 

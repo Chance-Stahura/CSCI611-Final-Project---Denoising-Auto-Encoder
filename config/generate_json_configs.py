@@ -1,90 +1,101 @@
 import json
 from pathlib import Path
-from itertools import product
-
-# NOTE: adjust lists according to desired output
-config = {
-    "experiment": {"name": "<noise_type>_<sigma_val>_<epoch_val>_<dataset>"},
-    "noise": {
-        "type": ["gaussian", "salt_pepper", "occlusion"],
-        "sigma": [5, 10, 15, 20, 25],
-    },
-    "training": {
-        "epochs": 5,  # [5, 10, 20],
-        "dataset": "cbsd68",  # ["cbsd68", "bsds500", "waterloo"]
-    },
-}
-
-
-def extract_sweep_params(cfg):
-    """
-    Flatten nested config into sweepable parameters.
-    Returns dict: {("model", "architecture"): [...], ...}
-    """
-    sweep = {}
-
-    for section, params in cfg.items():
-        if isinstance(params, dict):
-            for key, value in params.items():
-                if isinstance(value, list):
-                    sweep[(section, key)] = value
-
-    return sweep
-
-
-def build_config(base_cfg, combo_dict):
-    """
-    Reconstruct full nested config from one combination.
-    """
-    new_cfg = {}
-
-    for section, params in base_cfg.items():
-        new_cfg[section] = {}
-
-        if isinstance(params, dict):
-            for key, value in params.items():
-                if isinstance(value, list):
-                    new_cfg[section][key] = combo_dict[(section, key)]
-                else:
-                    new_cfg[section][key] = value
-
-    return new_cfg
-
-
-def generate_experiment_name(cfg):
-    return (
-        # f"{cfg['model']['architecture']}_"
-        f"{cfg['noise']['type']}_"
-        f"{cfg['noise']['sigma']}_"
-        f"{cfg['training']['epochs']}_"
-        f"{cfg['training']['dataset']}"
-    )
-
-
-def generate_configs(config, output_dir="configs"):
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    sweep = extract_sweep_params(config)
-
-    keys = list(sweep.keys())
-    values = list(sweep.values())
-
-    for i, combo in enumerate(product(*values)):
-        combo_dict = dict(zip(keys, combo))
-
-        cfg = build_config(config, combo_dict)
-
-        # generate experiment name
-        cfg["experiment"]["name"] = generate_experiment_name(cfg)
-
-        filepath = output_dir / f"{cfg['experiment']['name']}.json"
-
-        with filepath.open("w") as f:
-            json.dump(cfg, f, indent=4)
-
 
 OUTPUT_DIR: Path = Path(__file__).resolve().parent
 
-# run
-generate_configs(config, output_dir=OUTPUT_DIR)
+EPOCHS: list[int] = [5]
+DATASETS: list[str] = ["cbsd68"]
+
+SIGMA_VALUES: list[int] = [4, 10, 15, 20, 25]
+P_VALUES: list[float] = [0.1, 0.2, 0.3, 0.4, 0.5]
+SIZE_VALUES: list[int] = [4, 10, 15, 20, 25]
+
+
+def write_config(config: dict, output_dir: Path) -> None:
+    """Writes one config to a JSON file."""
+    experiment_name: str = config["experiment"]["name"]
+    filepath: Path = output_dir / f"{experiment_name}.json"
+
+    with filepath.open("w", encoding="utf-8") as f:
+        json.dump(config, f, indent=4)
+
+
+def build_gaussian_config(sigma: int, epochs: int, dataset: str) -> dict:
+    """Builds one gaussian config."""
+    experiment_name: str = f"gaussian_{sigma}_{epochs}_{dataset}"
+
+    return {
+        "experiment": {
+            "name": experiment_name,
+        },
+        "noise": {
+            "type": "gaussian",
+            "sigma": sigma,
+        },
+        "training": {
+            "epochs": epochs,
+            "dataset": dataset,
+        },
+    }
+
+
+def build_salt_pepper_config(p: float, epochs: int, dataset: str) -> dict:
+    """Builds one salt-and-pepper config."""
+    p_label: str = str(p).replace(".", "p")
+    experiment_name: str = f"salt_pepper_{p_label}_{epochs}_{dataset}"
+
+    return {
+        "experiment": {
+            "name": experiment_name,
+        },
+        "noise": {
+            "type": "salt_pepper",
+            "p": p,
+        },
+        "training": {
+            "epochs": epochs,
+            "dataset": dataset,
+        },
+    }
+
+
+def build_occlusion_config(size: int, epochs: int, dataset: str) -> dict:
+    """Builds one occlusion config."""
+    experiment_name: str = f"occlusion_{size}_{epochs}_{dataset}"
+
+    return {
+        "experiment": {
+            "name": experiment_name,
+        },
+        "noise": {
+            "type": "occlusion",
+            "size": size,
+        },
+        "training": {
+            "epochs": epochs,
+            "dataset": dataset,
+        },
+    }
+
+
+def generate_configs(output_dir: Path) -> None:
+    """Generates all configs."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    for epochs in EPOCHS:
+        for dataset in DATASETS:
+            for sigma in SIGMA_VALUES:
+                config: dict = build_gaussian_config(sigma, epochs, dataset)
+                write_config(config, output_dir)
+
+            for p in P_VALUES:
+                config = build_salt_pepper_config(p, epochs, dataset)
+                write_config(config, output_dir)
+
+            for size in SIZE_VALUES:
+                config = build_occlusion_config(size, epochs, dataset)
+                write_config(config, output_dir)
+
+
+if __name__ == "__main__":
+    generate_configs(OUTPUT_DIR)
