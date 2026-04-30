@@ -57,11 +57,6 @@ def reconstruct_full_image(model, noisy_img: np.ndarray, patch_size: int = 64) -
     return output[:H, :W, :]
 
 
-# TODO: def evaluate():
-# input:
-#   denoising_autencoders = list
-#   dense_autoencoder = list
-#   original_benchmark = list
 def evaluate(experiment = str) -> None:
 
     our_model = tf.keras.models.load_model(f"outputs/denoise/{experiment}.keras")
@@ -79,6 +74,15 @@ def evaluate(experiment = str) -> None:
 
     # run evaluation/testing on CBSD68
     for name, model in models.items():
+
+        if name == "denoising_autoencoder":
+            name_out = "denoise"
+        elif name == "dense_autoencoder":
+            name_out = "dense"
+        elif name == "original_benchmark":
+            name_out = "benchmark"
+        else:
+            raise ValueError(f"Unknown model name: {name}")
 
         #average PSNR and SSIM for all test images
         total_mse = 0.0
@@ -128,11 +132,11 @@ def evaluate(experiment = str) -> None:
         axes[2].imshow(clean_batch[0])
         axes[2].set_title("Clean")
         axes[2].axis('off')
-        plt.savefig(METRICS_DIR/f"{name}_comparison.png")
+        plt.savefig(METRICS_DIR/f"{experiment}_{name}_comparison.png")
         plt.close()
 
         # plot training loss curves per model
-        with open(XXX/f"{name}_history.json", "r") as f:
+        with open(f"outputs/{name_out}/histories/{experiment}_history.json", "r") as f:
             history = json.load(f)
         plt.plot(history['loss'], label=f'{name} Train')
         plt.plot(history['val_loss'], label=f'{name} Validation')
@@ -140,7 +144,7 @@ def evaluate(experiment = str) -> None:
         plt.xlabel("Epoch")
         plt.ylabel("Loss")
         plt.legend()
-        plt.savefig(METRICS_DIR/f"{name}_loss.png")
+        plt.savefig(METRICS_DIR/f"{experiment}_{name_out}_loss.png")
         plt.close()
 
     # save bar chart comparing PSNR/SSIM for all models
@@ -152,15 +156,7 @@ def evaluate(experiment = str) -> None:
     plt.bar(ssim_scores.keys(), ssim_scores.values())
     plt.title("Structural Similarity Index Measure (SSIM)")
     plt.ylabel("Score (0-1)")
-    plt.savefig(METRICS_DIR/"ssim_comparison.png")
+    plt.savefig(METRICS_DIR/f"{experiment}_ssim_comparison.png")
     plt.close()
 
     return None
-
-
-
-# """Evaluates models of the same architecture."""
-# def inner_evaluate()
-    
-#     for path in CONFIG_DIR.glob("*.json"):
-#         if path.is_file() and path.suffix.lower() == ".json":
