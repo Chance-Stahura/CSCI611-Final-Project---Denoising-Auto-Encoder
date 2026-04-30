@@ -220,3 +220,5 @@ src/test.py
 .json
 
 outputs/*
+config/*.json
+config/done/*.json
