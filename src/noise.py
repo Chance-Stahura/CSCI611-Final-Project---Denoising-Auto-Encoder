@@ -55,6 +55,13 @@ def add_occlusion(x: tf.Tensor, size: int = 12) -> tf.Tensor:
     return x * mask
 
 
+def add_multi_occlusion(x: tf.Tensor, size: int = 12, k: int = 3) -> tf.Tensor:
+    """Add k many occlusion sqaures."""
+    for _ in range(k):
+        x = add_occlusion(x, size)
+    return x
+
+
 def get_noise_fn(config: dict) -> Callable[[tf.Tensor], tf.Tensor]:
     """Returns a function that adds noise to an image"""
     noise_type = config["noise"]["type"]
