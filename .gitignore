@@ -219,7 +219,7 @@ src/test.py
 .keras
 .json
 
-outputs/*
 config/*.json
 config/done/*.json
-metrics/
+outputs/*
+metrics/*
