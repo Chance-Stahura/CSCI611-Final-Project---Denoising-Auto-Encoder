@@ -7,12 +7,13 @@ from json import load
 from pathlib import Path
 from shutil import move
 
-from auto_encoder import model_process
 from dataset import (
     DEFAULT_SIGMA,
     DEFAULT_SALT_PEPPER_P,
     DEFAULT_OCCLUSION_SIZE,
 )
+from auto_encoder import model_process
+from evaluate import evaluate
 
 BASE_DIR: Path = Path(__file__).resolve().parents[1]
 
@@ -57,7 +58,10 @@ def main() -> None:
             epochs: int = config["training"]["epochs"]
             dataset: str = config["training"]["dataset"]
 
-            print(f"Currently runnning with: {path}")
+            print(f"\n{'=' * 50}")
+            print(f"\nCurrently runnning experiment: {path}\n")
+
+            print("\n>>> Building models, creating histories...\n")
             model_process(
                 experiment_name=experiment_name,
                 noise_type=noise_type,
@@ -68,7 +72,10 @@ def main() -> None:
                 occlusion_size=occlusion_size,
             )
 
-            print(f"Done with: {path}")
+            print("\n>>> Evaluating experiment models...\n")
+            evaluate(experiment_name)
+
+            print(f"Done with experiment: {path}")
 
             try:
                 move(path, DONE_DIR)
