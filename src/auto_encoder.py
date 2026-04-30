@@ -46,6 +46,9 @@ BASE_DIR: Path = Path(__file__).resolve().parents[1]
 SAVE_DIR: Path = BASE_DIR / "models"
 SAVE_DIR.mkdir(exist_ok=True)
 
+HISTORIES_PATH: Path = BASE_DIR / "histories"
+HISTORIES_PATH.mkdir(parents=True, exist_ok=True)
+
 
 cbsd68_img_folder: Path = download_dataset(TARGET_DIR_CBSD68)
 cbsd_ground_truth: Path = cbsd68_img_folder / "original_png"
@@ -138,6 +141,7 @@ def evaluate_full_image_dataset(
 # Link: https://ompramod.medium.com/autoencoders-explained-9196c38af6f6
 
 # NOTE: this code was adapted for the purpose of this project
+
 
 def build_dense_model(
     input_shape: tuple[
@@ -254,18 +258,11 @@ def model_process(
 
         model.summary()
 
-        history = model.fit(
-            train_ds,
-            validation_data=val_ds,
-            epochs=EPOCHS
-        )
-
-        histories_path: Path = BASE_DIR / "histories"
-        histories_path.mkdir(parents=True, exist_ok=True)
+        history = model.fit(train_ds, validation_data=val_ds, epochs=EPOCHS)
 
         # saves the history of each model for use in evaluate.py
         # for plotting training/validation losses
-        with open(histories_path/f"{name}_history.json", "w") as f:
+        with open(HISTORIES_PATH / f"{name}_history.json", "w", encoding="utf-8") as f:
             json.dump(history.history, f)
 
         model_save_path: Path = SAVE_DIR / f"{name}_{experiment_name}.keras"
