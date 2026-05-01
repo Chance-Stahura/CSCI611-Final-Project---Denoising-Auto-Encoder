@@ -21,6 +21,10 @@ CONFIG_DIR: Path = BASE_DIR / "config"
 CONFIG_DIR.mkdir(exist_ok=True)
 DONE_DIR: Path = BASE_DIR / "config/done"
 DONE_DIR.mkdir(exist_ok=True)
+OUTPUTS_DIR: Path = BASE_DIR / "outputs"
+OUTPUTS_DIR.mkdir(exist_ok=True)
+METRICS_DIR: Path = BASE_DIR / "metrics"
+METRICS_DIR.mkdir(exist_ok=True)
 
 
 def main() -> None:
@@ -61,25 +65,48 @@ def main() -> None:
             print(f"\n{'=' * 50}")
             print(f"\nCurrently runnning experiment: {path}\n")
 
-            print("\n>>> Building models, creating histories...\n")
-            model_process(
-                experiment_name=experiment_name,
-                noise_type=noise_type,
-                sigma=sigma,
-                epochs=epochs,
-                dataset=dataset,
-                salt_pepper_p=salt_pepper_p,
-                occlusion_size=occlusion_size,
-            )
+            model_save_files: set[Path] = {
+                OUTPUTS_DIR / f"denoise_full/{experiment_name}.keras",
+                OUTPUTS_DIR / f"denoise/{experiment_name}.keras",
+                OUTPUTS_DIR / f"dense/{experiment_name}.keras",
+                OUTPUTS_DIR / f"benchmark/{experiment_name}.keras"
+            }
 
-            print("\n>>> Evaluating experiment models...\n")
-            evaluate(
-                experiment_name,
-                noise_type=noise_type,
-                sigma=sigma,
-                salt_pepper_p=salt_pepper_p,
-                occlusion_size=occlusion_size,
-            )
+            if all(f.is_file() for f in model_save_files):
+                print("\n>>> Models & histories already exist!!!\n")
+            else:
+                print("\n>>> Building models, creating histories...\n")
+                model_process(
+                    experiment_name=experiment_name,
+                    noise_type=noise_type,
+                    sigma=sigma,
+                    epochs=epochs,
+                    dataset=dataset,
+                    salt_pepper_p=salt_pepper_p,
+                    occlusion_size=occlusion_size,
+                )
+
+            metrics_save_files: set[Path] = {
+                METRICS_DIR / experiment_name / "benchmark_loss.png",
+                METRICS_DIR / experiment_name / "denoise_loss.png",
+                METRICS_DIR / experiment_name / "denoising_autoencoder_comparison.png",
+                METRICS_DIR / experiment_name / "dense_autoencoder_comparison.png",
+                METRICS_DIR / experiment_name / "dense_loss.png",
+                METRICS_DIR / experiment_name / "original_benchmark_comparison.png",
+                METRICS_DIR / experiment_name / "psnr_comparison.png",
+                METRICS_DIR / experiment_name / "ssim_comparison.png"
+            }
+            if all(f.is_file() for f in metrics_save_files):
+                print("\n>>> Models already evaluated!!!\n")
+            else:
+                print("\n>>> Evaluating experiment models: computing metrics...\n")
+                evaluate(
+                    experiment_name,
+                    noise_type=noise_type,
+                    sigma=sigma,
+                    salt_pepper_p=salt_pepper_p,
+                    occlusion_size=occlusion_size,
+                )
 
             print(f"Done with experiment: {path}")
 
