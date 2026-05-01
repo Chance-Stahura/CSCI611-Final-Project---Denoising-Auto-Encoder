@@ -216,10 +216,11 @@ data/
 src/test.py
 
 # we dont want our local testing models/data pushed up to repo
-models/*
 .keras
-
-histories/*
 .json
 
+config/*.json
+config/wait/*.json
+config/done/*.json
 outputs/*
+metrics/*

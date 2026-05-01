@@ -26,32 +26,40 @@ def add_salt_pepper_noise(x: tf.Tensor, p: float = 0.1) -> tf.Tensor:
 
 
 def add_occlusion(x: tf.Tensor, size: int = 12) -> tf.Tensor:
-    """Adds random occlusion to an image"""
+    """Adds random square occlusion to an image."""
     h: tf.Tensor = tf.shape(x)[0]
     w: tf.Tensor = tf.shape(x)[1]
+    c: tf.Tensor = tf.shape(x)[2]
 
-    top: tf.Tensor = tf.random.uniform([], 0, h - size, dtype=tf.int32)
-    left: tf.Tensor = tf.random.uniform([], 0, w - size, dtype=tf.int32)
+    occ_size: tf.Tensor = tf.minimum(tf.cast(size, tf.int32), tf.minimum(h, w))
 
-    mask: tf.Tensor = tf.ones_like(x)
+    top: tf.Tensor = tf.random.uniform([], 0, h - occ_size + 1, dtype=tf.int32)
+    left: tf.Tensor = tf.random.uniform([], 0, w - occ_size + 1, dtype=tf.int32)
 
-    mask = tf.tensor_scatter_nd_update(
-        mask,
-        indices=tf.reshape(
-            tf.stack(
-                tf.meshgrid(
-                    tf.range(top, top + size),
-                    tf.range(left, left + size),
-                    indexing="ij",
-                ),
-                axis=-1,
-            ),
-            [-1, 2],
-        ),
-        updates=tf.zeros([size * size]),
+    pad_bottom: tf.Tensor = h - top - occ_size
+    pad_right: tf.Tensor = w - left - occ_size
+
+    zero_block: tf.Tensor = tf.zeros([occ_size, occ_size, c], dtype=x.dtype)
+
+    mask: tf.Tensor = tf.pad(
+        zero_block,
+        paddings=[
+            [top, pad_bottom],
+            [left, pad_right],
+            [0, 0],
+        ],
+        mode="CONSTANT",
+        constant_values=1,
     )
 
     return x * mask
+
+
+def add_multi_occlusion(x: tf.Tensor, size: int = 12, k: int = 3) -> tf.Tensor:
+    """Add k many occlusion sqaures."""
+    for _ in range(k):
+        x = add_occlusion(x, size)
+    return x
 
 
 def get_noise_fn(config: dict) -> Callable[[tf.Tensor], tf.Tensor]:
