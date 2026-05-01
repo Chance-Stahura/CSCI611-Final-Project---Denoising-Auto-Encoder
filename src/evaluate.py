@@ -153,14 +153,16 @@ def evaluate(
         noisy_img = noisy_batch[0].numpy()
 
         if name in {"dense_autoencoder", "original_benchmark"}:
-            pred_img = reconstruct_full_image(model, noisy_img, patch_size=PATCH_SIZE)
+            pred_img = reconstruct_full_image(
+                model, noisy_img, patch_size=PATCH_SIZE
+            )
         else:
             pred_img = model(noisy_batch, training=False).numpy()[0]
 
         # generate comparison grids:
         # noisy input -> model output -> ground truth
         fig, axes = plt.subplots(1, 3)
-        plt.suptitle(f"{name} Denoising Comparison")
+        plt.suptitle(f"{name} Denoising Comparison\nexperiment: {experiment}")
 
         # plt.title(f"Experiment: {experiment}")
         axes[0].imshow(noisy_batch[0])
@@ -187,7 +189,7 @@ def evaluate(
 
         plt.plot(history["loss"], label=f"{name} Train")
         plt.plot(history["val_loss"], label=f"{name} Validation")
-        plt.title(f"{name} Training Loss")
+        plt.title(f"{name} Training Loss\nexperiment: {experiment}")
         plt.xlabel("Epoch")
         plt.ylabel("Loss")
         plt.legend()
@@ -196,12 +198,14 @@ def evaluate(
 
     # save bar chart comparing PSNR/SSIM for all models
     plt.bar(psnr_scores.keys(), psnr_scores.values())
-    plt.title("Peak Signal-to-Noise Ratio (PSNR)")
+    plt.title(f"Peak Signal-to-Noise Ratio (PSNR)\nexperiment: {experiment}")
     plt.ylabel("dB")
     plt.savefig(EXPERIMENT_DIR / "psnr_comparison.png")
     plt.close()
     plt.bar(ssim_scores.keys(), ssim_scores.values())
-    plt.title("Structural Similarity Index Measure (SSIM)")
+    plt.title(
+        f"Structural Similarity Index Measure (SSIM)\nexperiment: {experiment}"
+    )
     plt.ylabel("Score (0-1)")
     plt.savefig(EXPERIMENT_DIR / "ssim_comparison.png")
     plt.close()
