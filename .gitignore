@@ -220,7 +220,7 @@ src/test.py
 .json
 
 config/*.json
-config/waiting/*.json
+config/wait/*.json
 config/done/*.json
 outputs/*
 metrics/*
