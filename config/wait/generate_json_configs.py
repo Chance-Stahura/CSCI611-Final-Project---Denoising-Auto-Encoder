@@ -3,8 +3,8 @@ from pathlib import Path
 
 OUTPUT_DIR: Path = Path(__file__).resolve().parent
 
-EPOCHS: list[int] = [5]
-DATASETS: list[str] = ["cbsd68"]
+EPOCHS: list[int] = [25]
+DATASETS: list[str] = ["bsds500"]
 
 SIGMA_VALUES: list[int] = [5, 10, 15, 20, 25, 35, 50]
 P_VALUES: list[float] = [0.01, 0.02, 0.05, 0.1, 0.2, 0.3]
