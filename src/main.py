@@ -36,6 +36,8 @@ def main() -> None:
     for path in CONFIG_DIR.glob("*.json"):
         if path.is_file() and path.suffix.lower() == ".json":
 
+            short_path: Path = path.relative_to(BASE_DIR)
+
             # dict[str, dict[str, (str | int)]]]
             config = {}
             with path.open("r", encoding="utf-8") as json_file:
@@ -58,8 +60,8 @@ def main() -> None:
             epochs: int = config["training"]["epochs"]
             dataset: str = config["training"]["dataset"]
 
-            print(f"\n{'=' * 50}")
-            print(f"\nCurrently runnning experiment: {path}\n")
+            print(f"{'=' * 50}")
+            print(f"\nRunnning experiment: {short_path}\n")
 
             model_save_files: set[Path] = {
                 MODELS_DIR / f"denoise_full/{experiment_name}.keras",
@@ -102,9 +104,10 @@ def main() -> None:
                     sigma=sigma,
                     salt_pepper_p=salt_pepper_p,
                     occlusion_size=occlusion_size,
+                    epochs=epochs,
                 )
 
-            print(f"Done with experiment: {path}")
+            print(f"Done with experiment: {short_path}\n")
 
             try:
                 move(path, DONE_DIR)
@@ -112,7 +115,7 @@ def main() -> None:
                 print("Permission Error! Quitting...")
                 raise
 
-            print("Moved into done folder.\n\n", path)
+            print(f"Moved {short_path} into {DONE_DIR.relative_to(BASE_DIR)}.\n\n")
 
 
 if __name__ == "__main__":
