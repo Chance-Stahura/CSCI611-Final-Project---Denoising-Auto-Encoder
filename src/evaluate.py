@@ -1,5 +1,5 @@
 import tensorflow as tf
-from json import load
+import json
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -12,14 +12,17 @@ from auto_encoder import (
     NOISE_SIGMA,
     TEST_BATCH_SIZE,
     BASE_DIR,
+    MODELS_DIR
 )
 
 from dataset import Dataset
 
 matplotlib.use("Agg")
 
-METRICS_DIR: Path = BASE_DIR / "metrics"
-METRICS_DIR.mkdir(parents=True, exist_ok=True)
+RESULTS_DIR: Path = BASE_DIR / "results"
+RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+# METRICS_DIR: Path = RESULTS_DIR / "metrics"
+# METRICS_DIR.mkdir(parents=True, exist_ok=True)
 
 test_imgs = build_image_set(cbsd_ground_truth)
 
@@ -60,8 +63,8 @@ def evaluate(
     salt_pepper_p: float,
     occlusion_size: int,
 ) -> None:
-    """Evaluates all saved models for one ."""
-    EXPERIMENT_DIR: Path = METRICS_DIR / experiment
+    """Evaluates all saved models for one."""
+    EXPERIMENT_DIR: Path = RESULTS_DIR / experiment
     EXPERIMENT_DIR.mkdir(parents=True, exist_ok=True)
 
     test_full_ds = Dataset(
@@ -90,9 +93,14 @@ def evaluate(
         salt_pepper_p=salt_pepper_p,
         occlusion_size=occlusion_size,
     )
-    our_model = tf.keras.models.load_model(f"outputs/denoise/{experiment}.keras")
-    mlp_model = tf.keras.models.load_model(f"outputs/dense/{experiment}.keras")
-    tf_model = tf.keras.models.load_model(f"outputs/benchmark/{experiment}.keras")
+
+    our_model_path: Path = MODELS_DIR / f"denoise/{experiment}.keras"
+    mlp_model_path: Path = MODELS_DIR / f"dense/{experiment}.keras"
+    tf_model_path: Path = MODELS_DIR / f"benchmark/{experiment}.keras"
+
+    our_model = tf.keras.models.load_model(our_model_path)
+    mlp_model = tf.keras.models.load_model(mlp_model_path)
+    tf_model = tf.keras.models.load_model(tf_model_path)
 
     models: dict[str, tf.keras.Model] = {
         "denoising_autoencoder": our_model,
@@ -181,11 +189,11 @@ def evaluate(
 
         # plot training loss curves per model
         with open(
-            f"outputs/{name_out}/histories/{experiment}_history.json",
+            MODELS_DIR / f"{name_out}/histories/{experiment}_history.json",
             mode="r",
             encoding="utf-8",
         ) as f:
-            history: dict[str, list[float]] = load(f)
+            history: dict[str, list[float]] = json.load(f)
 
         plt.plot(history["loss"], label=f"{name} Train")
         plt.plot(history["val_loss"], label=f"{name} Validation")

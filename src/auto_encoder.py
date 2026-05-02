@@ -47,19 +47,19 @@ FULL_IMAGE_INPUT_SHAPE: tuple[None, None, int] = (None, None, INPUT_CHANNELS)
 
 BASE_DIR: Path = Path(__file__).resolve().parents[1]
 
-OUTPUTS_DIR: Path = BASE_DIR / "outputs"
-OUTPUTS_DIR.mkdir(exist_ok=True)
+MODELS_DIR: Path = BASE_DIR / "models"
+MODELS_DIR.mkdir(exist_ok=True)
 
-DENOISE_DIR: Path = OUTPUTS_DIR / "denoise"
+DENOISE_DIR: Path = MODELS_DIR / "denoise"
 DENOISE_DIR.mkdir(parents=True, exist_ok=True)
 
-DENOISE_FULL_DIR: Path = OUTPUTS_DIR / "denoise_full"
+DENOISE_FULL_DIR: Path = MODELS_DIR / "denoise_full"
 DENOISE_FULL_DIR.mkdir(parents=True, exist_ok=True)
 
-DENSE_DIR: Path = OUTPUTS_DIR / "dense"
+DENSE_DIR: Path = MODELS_DIR / "dense"
 DENSE_DIR.mkdir(parents=True, exist_ok=True)
 
-BENCHMARK_DIR: Path = OUTPUTS_DIR / "benchmark"
+BENCHMARK_DIR: Path = MODELS_DIR / "benchmark"
 BENCHMARK_DIR.mkdir(parents=True, exist_ok=True)
 
 (DENOISE_DIR / "histories").mkdir(parents=True, exist_ok=True)
