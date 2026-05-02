@@ -11,7 +11,6 @@ from keras.utils import img_to_array, load_img  # type: ignore
 from noise import add_gaussian_noise, add_occlusion, add_salt_pepper_noise
 
 DEFAULT_PATCH_SIZE: int = 64
-DEFAULT_SIGMA: int = 25
 DEFAULT_BATCH_SIZE: int = 32
 
 PIXEL_SCALE: float = 255.0
@@ -20,9 +19,9 @@ PIXEL_MAX: float = 1.0
 IMAGE_CHANNELS: int = 3
 
 DEFAULT_NOISE_TYPE: str = "gaussian"
-DEFAULT_SALT_PEPPER_P: float = 0.1
-DEFAULT_OCCLUSION_SIZE: int = 12
-GAUSSIAN_MEAN: float = 0.0
+DEFAULT_SIGMA: int = 0
+DEFAULT_SALT_PEPPER_P: float = 0.0
+DEFAULT_OCCLUSION_SIZE: int = 0
 
 
 class Dataset(tf.keras.utils.Sequence):

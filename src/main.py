@@ -12,19 +12,15 @@ from dataset import (
     DEFAULT_SALT_PEPPER_P,
     DEFAULT_OCCLUSION_SIZE,
 )
-from auto_encoder import model_process
-from evaluate import evaluate
+from auto_encoder import model_process, MODELS_DIR
+from evaluate import evaluate, RESULTS_DIR, METRICS_DIR
 
 BASE_DIR: Path = Path(__file__).resolve().parents[1]
 
 CONFIG_DIR: Path = BASE_DIR / "config"
 CONFIG_DIR.mkdir(exist_ok=True)
-DONE_DIR: Path = BASE_DIR / "config/done"
+DONE_DIR: Path = CONFIG_DIR / "done"
 DONE_DIR.mkdir(exist_ok=True)
-OUTPUTS_DIR: Path = BASE_DIR / "outputs"
-OUTPUTS_DIR.mkdir(exist_ok=True)
-METRICS_DIR: Path = BASE_DIR / "metrics"
-METRICS_DIR.mkdir(exist_ok=True)
 
 
 def main() -> None:
@@ -66,10 +62,10 @@ def main() -> None:
             print(f"\nCurrently runnning experiment: {path}\n")
 
             model_save_files: set[Path] = {
-                OUTPUTS_DIR / f"denoise_full/{experiment_name}.keras",
-                OUTPUTS_DIR / f"denoise/{experiment_name}.keras",
-                OUTPUTS_DIR / f"dense/{experiment_name}.keras",
-                OUTPUTS_DIR / f"benchmark/{experiment_name}.keras"
+                MODELS_DIR / f"denoise_full/{experiment_name}.keras",
+                MODELS_DIR / f"denoise/{experiment_name}.keras",
+                MODELS_DIR / f"dense/{experiment_name}.keras",
+                MODELS_DIR / f"benchmark/{experiment_name}.keras"
             }
 
             if all(f.is_file() for f in model_save_files):
@@ -86,20 +82,20 @@ def main() -> None:
                     occlusion_size=occlusion_size,
                 )
 
-            metrics_save_files: set[Path] = {
-                METRICS_DIR / experiment_name / "benchmark_loss.png",
-                METRICS_DIR / experiment_name / "denoise_loss.png",
-                METRICS_DIR / experiment_name / "denoising_autoencoder_comparison.png",
-                METRICS_DIR / experiment_name / "dense_autoencoder_comparison.png",
-                METRICS_DIR / experiment_name / "dense_loss.png",
-                METRICS_DIR / experiment_name / "original_benchmark_comparison.png",
-                METRICS_DIR / experiment_name / "psnr_comparison.png",
-                METRICS_DIR / experiment_name / "ssim_comparison.png"
+            results_save_files: set[Path] = {
+                RESULTS_DIR / experiment_name / "benchmark_loss.png",
+                RESULTS_DIR / experiment_name / "denoise_loss.png",
+                RESULTS_DIR / experiment_name / "denoising_autoencoder_comparison.png",
+                RESULTS_DIR / experiment_name / "dense_autoencoder_comparison.png",
+                RESULTS_DIR / experiment_name / "dense_loss.png",
+                RESULTS_DIR / experiment_name / "original_benchmark_comparison.png",
+                RESULTS_DIR / experiment_name / "psnr_comparison.png",
+                RESULTS_DIR / experiment_name / "ssim_comparison.png"
             }
-            if all(f.is_file() for f in metrics_save_files):
+            if all(f.is_file() for f in results_save_files):
                 print("\n>>> Models already evaluated!!!\n")
             else:
-                print("\n>>> Evaluating experiment models: computing metrics...\n")
+                print("\n>>> Evaluating experiment models: computing results, metrics...\n")
                 evaluate(
                     experiment_name,
                     noise_type=noise_type,
