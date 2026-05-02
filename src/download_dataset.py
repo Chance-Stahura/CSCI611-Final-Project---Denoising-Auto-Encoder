@@ -14,7 +14,7 @@ environ["TF_ENABLE_ONEDNN_OPTS"] = "0"  # suppress all logs
 
 PROJECT_ROOT: Path = Path(__file__).resolve().parents[1]
 
-print(f"\nPROJECT_ROOT: {PROJECT_ROOT.resolve()}\n")
+print(f"\nPROJECT_ROOT: {PROJECT_ROOT}\n")
 
 DATA_DIR: Path = PROJECT_ROOT / "data"
 DATA_DIR.mkdir(exist_ok=True)
@@ -53,12 +53,12 @@ def download_dataset(dataset_path: Path) -> Path:
         root_name = "BSDS500-master"
         target_dir = TARGET_DIR_BSDS500
     else:
-        raise ValueError(f"Unknown dataset path: {dataset_path.resolve()}")
+        raise ValueError(f"Unknown dataset path: {dataset_path}")
 
     if target_dir.exists():
         print(f"Target directory"
-              f" {target_dir.resolve().relative_to(PROJECT_ROOT).resolve()}"
-              f" already exists.")
+              f" {target_dir.relative_to(PROJECT_ROOT)}"
+              f" already exists.\n")
         return target_dir
 
     dataset_zip_path: Path = Path(
@@ -92,9 +92,9 @@ def download_dataset(dataset_path: Path) -> Path:
     _safe_rmtree(extracted_root)
     _safe_unlink(dataset_zip_path)  # deletes whatever.zip
 
-    print(
-        f"{root_name} Dataset path:"
-        f" {target_dir.resolve().relative_to(PROJECT_ROOT).resolve()}\n"
+    print(f"\nTarget directory:"
+          f" {target_dir.relative_to(PROJECT_ROOT)}"
+          f" created successfully.\n"
     )
     return target_dir
 

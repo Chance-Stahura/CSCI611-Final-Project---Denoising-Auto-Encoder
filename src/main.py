@@ -36,7 +36,7 @@ def main() -> None:
     for path in CONFIG_DIR.glob("*.json"):
         if path.is_file() and path.suffix.lower() == ".json":
 
-            short_path: Path = path.resolve().relative_to(BASE_DIR).resolve()
+            short_path: Path = path.relative_to(BASE_DIR)
 
             # dict[str, dict[str, (str | int)]]]
             config = {}
@@ -115,7 +115,7 @@ def main() -> None:
                 print("Permission Error! Quitting...")
                 raise
 
-            print(f"Moved {short_path} into done folder.\n\n")
+            print(f"Moved {short_path} into {DONE_DIR.relative_to(BASE_DIR)}.\n\n")
 
 
 if __name__ == "__main__":
