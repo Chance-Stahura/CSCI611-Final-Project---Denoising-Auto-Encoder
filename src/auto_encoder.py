@@ -5,10 +5,12 @@
 from os import listdir
 from os.path import isfile, join
 from pathlib import Path
+import json
 
 import tensorflow as tf  # type: ignore
 from tensorflow.keras import layers, models  # type: ignore
-import json
+# to train all three models at one time
+from original_benchmark import build_original_tf_benchmark_model
 
 from dataset import (
     Dataset,
@@ -16,14 +18,12 @@ from dataset import (
     DEFAULT_OCCLUSION_SIZE,
 )
 
-# to train all three models at one time
-from original_benchmark import build_original_tf_benchmark_model
-
 from download_dataset import (
     download_dataset,
     TARGET_DIR_BSDS500,
     TARGET_DIR_CBSD68,
 )
+
 
 PATCH_SIZE: int = 64
 NOISE_SIGMA: int = 25
@@ -43,7 +43,6 @@ UPSAMPLE_FACTOR: int = 2
 
 TRAIN_INPUT_SHAPE: tuple[int, int, int] = (PATCH_SIZE, PATCH_SIZE, INPUT_CHANNELS)
 FULL_IMAGE_INPUT_SHAPE: tuple[None, None, int] = (None, None, INPUT_CHANNELS)
-
 
 BASE_DIR: Path = Path(__file__).resolve().parents[1]
 

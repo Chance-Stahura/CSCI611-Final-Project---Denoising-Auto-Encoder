@@ -5,24 +5,26 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 from pathlib import Path
+
 from auto_encoder import (
     build_image_set,
     cbsd_ground_truth,
     PATCH_SIZE,
     NOISE_SIGMA,
     TEST_BATCH_SIZE,
-    BASE_DIR,
     MODELS_DIR
 )
+
+BASE_DIR: Path = Path(__file__).resolve().parents[1]
+
+RESULTS_DIR: Path = BASE_DIR / "results"
+RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+METRICS_DIR: Path = RESULTS_DIR / "metrics"
+METRICS_DIR.mkdir(parents=True, exist_ok=True)
 
 from dataset import Dataset
 
 matplotlib.use("Agg")
-
-RESULTS_DIR: Path = BASE_DIR / "results"
-RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-# METRICS_DIR: Path = RESULTS_DIR / "metrics"
-# METRICS_DIR.mkdir(parents=True, exist_ok=True)
 
 test_imgs = build_image_set(cbsd_ground_truth)
 
@@ -94,13 +96,9 @@ def evaluate(
         occlusion_size=occlusion_size,
     )
 
-    our_model_path: Path = MODELS_DIR / f"denoise/{experiment}.keras"
-    mlp_model_path: Path = MODELS_DIR / f"dense/{experiment}.keras"
-    tf_model_path: Path = MODELS_DIR / f"benchmark/{experiment}.keras"
-
-    our_model = tf.keras.models.load_model(our_model_path)
-    mlp_model = tf.keras.models.load_model(mlp_model_path)
-    tf_model = tf.keras.models.load_model(tf_model_path)
+    our_model = tf.keras.models.load_model(MODELS_DIR / f"denoise/{experiment}.keras")
+    mlp_model = tf.keras.models.load_model(MODELS_DIR / f"dense/{experiment}.keras")
+    tf_model = tf.keras.models.load_model(MODELS_DIR / f"benchmark/{experiment}.keras")
 
     models: dict[str, tf.keras.Model] = {
         "denoising_autoencoder": our_model,

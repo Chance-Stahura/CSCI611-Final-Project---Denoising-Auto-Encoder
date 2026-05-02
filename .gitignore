@@ -222,5 +222,5 @@ src/test.py
 config/*.json
 config/wait/*.json
 config/done/*.json
-outputs/*
-metrics/*
+models/*
+results/*

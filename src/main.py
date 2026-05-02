@@ -12,21 +12,15 @@ from dataset import (
     DEFAULT_SALT_PEPPER_P,
     DEFAULT_OCCLUSION_SIZE,
 )
-from auto_encoder import model_process
-from evaluate import evaluate
+from auto_encoder import model_process, MODELS_DIR
+from evaluate import evaluate, RESULTS_DIR, METRICS_DIR
 
 BASE_DIR: Path = Path(__file__).resolve().parents[1]
 
 CONFIG_DIR: Path = BASE_DIR / "config"
 CONFIG_DIR.mkdir(exist_ok=True)
-DONE_DIR: Path = BASE_DIR / "config/done"
+DONE_DIR: Path = CONFIG_DIR / "done"
 DONE_DIR.mkdir(exist_ok=True)
-MODELS_DIR: Path = BASE_DIR / "models"
-MODELS_DIR.mkdir(exist_ok=True)
-RESULTS_DIR: Path = BASE_DIR / "results"
-RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-METRICS_DIR: Path = RESULTS_DIR / "metrics"
-METRICS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def main() -> None:
