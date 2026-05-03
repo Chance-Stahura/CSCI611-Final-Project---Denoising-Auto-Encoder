@@ -14,7 +14,7 @@ environ["TF_ENABLE_ONEDNN_OPTS"] = "0"  # suppress all logs
 
 PROJECT_ROOT: Path = Path(__file__).resolve().parents[1]
 
-print("PROJECT_ROOT: ", PROJECT_ROOT)  # DEBUGGING
+print(f"\nPROJECT_ROOT: {PROJECT_ROOT}\n")
 
 DATA_DIR: Path = PROJECT_ROOT / "data"
 DATA_DIR.mkdir(exist_ok=True)
@@ -56,10 +56,10 @@ def download_dataset(dataset_path: Path) -> Path:
         raise ValueError(f"Unknown dataset path: {dataset_path}")
 
     if target_dir.exists():
-        print(f"Target directory {target_dir} already exists")
+        print(f"Target directory"
+              f" {target_dir.relative_to(PROJECT_ROOT)}"
+              f" already exists.\n")
         return target_dir
-
-    print(f"Downloading dataset from {dataset_url}")
 
     dataset_zip_path: Path = Path(
         tf.keras.utils.get_file(
@@ -92,7 +92,10 @@ def download_dataset(dataset_path: Path) -> Path:
     _safe_rmtree(extracted_root)
     _safe_unlink(dataset_zip_path)  # deletes whatever.zip
 
-    print(f"{root_name} Dataset path: {target_dir}")
+    print(f"\nTarget directory:"
+          f" {target_dir.relative_to(PROJECT_ROOT)}"
+          f" created successfully.\n"
+    )
     return target_dir
 
 

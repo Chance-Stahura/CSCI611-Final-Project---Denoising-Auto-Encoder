@@ -64,6 +64,7 @@ def evaluate(
     sigma: int,
     salt_pepper_p: float,
     occlusion_size: int,
+    epochs: int,
 ) -> None:
     """Evaluates all saved models for one."""
     EXPERIMENT_DIR: Path = RESULTS_DIR / experiment
@@ -153,6 +154,30 @@ def evaluate(
 
         psnr_scores[name] = avg_psnr
         ssim_scores[name] = avg_ssim
+
+        model_metrics = {
+            "model": name_out,
+            "noise_type": noise_type,
+            # "noise_strength": noise_strength,
+            "epochs": epochs,
+            "mse": avg_mse,
+            "psnr": avg_psnr,
+            "ssim": avg_ssim,
+        }
+
+        if noise_type == "gaussian":
+            model_metrics["noise_strength"] = sigma
+        elif noise_type == "salt_pepper":
+            model_metrics["noise_strength"] = salt_pepper_p
+        elif noise_type == "occlusion":
+            model_metrics["noise_strength"] = occlusion_size
+        else:
+            raise ValueError(f"Unknown noise type: {noise_type}")
+
+        # save metrics for each model to model_metrics.json
+        out_path = EXPERIMENT_DIR / f"{name_out}.json"
+        with out_path.open("w", encoding="utf-8") as f:
+            json.dump(model_metrics, f, indent=4)
 
         # use first image for comparison grid
         noisy_batch, clean_batch = test_full_ds[0]
