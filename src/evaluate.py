@@ -196,15 +196,15 @@ def evaluate(
         plt.suptitle(f"{name} Denoising Comparison\nexperiment: {experiment}")
 
         # plt.title(f"Experiment: {experiment}")
-        axes[0].imshow(noisy_batch[0])
+        axes[0].imshow(noisy_batch[0], interpolation="nearest")
         axes[0].set_title("Noisy")
         axes[0].axis("off")
 
-        axes[1].imshow(pred_img)
+        axes[1].imshow(pred_img, interpolation="nearest")
         axes[1].set_title("Denoised")
         axes[1].axis("off")
 
-        axes[2].imshow(clean_batch[0])
+        axes[2].imshow(clean_batch[0], interpolation="nearest")
         axes[2].set_title("Clean")
         axes[2].axis("off")
         plt.savefig(EXPERIMENT_DIR / f"{name}_comparison.png")
