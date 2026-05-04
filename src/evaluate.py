@@ -192,7 +192,7 @@ def evaluate(
 
         # generate comparison grids:
         # noisy input -> model output -> ground truth
-        fig, axes = plt.subplots(1, 3)
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5), dpi=300)
         plt.suptitle(f"{name} Denoising Comparison\nexperiment: {experiment}")
 
         # plt.title(f"Experiment: {experiment}")
