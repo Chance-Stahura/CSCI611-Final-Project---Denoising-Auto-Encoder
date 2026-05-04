@@ -207,7 +207,10 @@ def evaluate(
         axes[2].imshow(clean_batch[0], interpolation="nearest")
         axes[2].set_title("Clean")
         axes[2].axis("off")
-        plt.savefig(EXPERIMENT_DIR / f"{name}_comparison.png")
+
+        plt.tight_layout()
+        plt.savefig(EXPERIMENT_DIR / f"{name}_comparison.png",
+                    bbox_inches="tight", pad_inches=0)
         plt.close()
 
         # plot training loss curves per model
