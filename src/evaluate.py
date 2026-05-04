@@ -192,25 +192,43 @@ def evaluate(
 
         # generate comparison grids:
         # noisy input -> model output -> ground truth
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5), dpi=300)
-        plt.suptitle(f"{name} Denoising Comparison\nexperiment: {experiment}")
+        figure_size: tuple[int, int] = (15, 5)
+        dpi_val: int = 300
+        pad_pixels: int = 20
+        padding_val: float = pad_pixels / dpi_val
 
-        # plt.title(f"Experiment: {experiment}")
+        fig, axes = plt.subplots(1, 3, figsize=figure_size, dpi=dpi_val)
+
+        title_fs = 28
+        label_fs = 24
+
+        suptitle: str = (
+            f"Denoising Comparison {name}\n"
+            f"experiment: {experiment}"
+        )
+        plt.suptitle(suptitle, fontsize=title_fs)
+
         axes[0].imshow(noisy_batch[0], interpolation="nearest")
-        axes[0].set_title("Noisy")
-        axes[0].axis("off")
+        axes[0].set_title("Noisy", fontsize=label_fs)
 
         axes[1].imshow(pred_img, interpolation="nearest")
-        axes[1].set_title("Denoised")
-        axes[1].axis("off")
+        axes[1].set_title("Denoised", fontsize=label_fs)
 
         axes[2].imshow(clean_batch[0], interpolation="nearest")
-        axes[2].set_title("Clean")
-        axes[2].axis("off")
+        axes[2].set_title("Clean", fontsize=label_fs)
+
+        for ax in axes:
+            ax.axis("off")
+
+        plt.imsave(EXPERIMENT_DIR / f"{name}_denoised.png", pred_img)
+        if not (EXPERIMENT_DIR / "noisy.png").is_file():
+            plt.imsave(EXPERIMENT_DIR / "noisy.png", noisy_batch[0])
+        if not (EXPERIMENT_DIR / "clean.png").is_file():
+            plt.imsave(EXPERIMENT_DIR / "clean.png", clean_batch[0])
 
         plt.tight_layout()
         plt.savefig(EXPERIMENT_DIR / f"{name}_comparison.png",
-                    bbox_inches="tight", pad_inches=0)
+                    bbox_inches="tight", pad_inches=padding_val)
         plt.close()
 
         # plot training loss curves per model
