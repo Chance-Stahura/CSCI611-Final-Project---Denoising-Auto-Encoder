@@ -8,7 +8,7 @@ from pathlib import Path
 
 from auto_encoder import (
     build_image_set,
-    cbsd_ground_truth,
+    TEST_DS,
     PATCH_SIZE,
     TEST_BATCH_SIZE,
     MODELS_DIR,
@@ -25,7 +25,7 @@ from dataset import Dataset
 
 matplotlib.use("Agg")
 
-test_imgs = build_image_set(cbsd_ground_truth)
+test_imgs = build_image_set(TEST_DS)
 
 
 def compute_psnr(mse):
@@ -98,7 +98,7 @@ def evaluate(
 
     # use first image for comparison grid
     num_images = len(test_full_ds)
-    noisy_batch, clean_batch = test_full_ds[1]  # choose index for plot outputs
+    noisy_batch, clean_batch = test_full_ds[25]  # choose index for plot outputs
     noisy_img = noisy_batch[0].numpy()
     clean_img = clean_batch[0].numpy()
 
@@ -125,17 +125,17 @@ def evaluate(
 
             # dense model + benchmark are not meant to handle full images
             if name == "dense_autoencoder" or name == "original_benchmark":
-                pred_img = reconstruct_full_image(
+                pred_img_it = reconstruct_full_image(
                     model, noisy_img_it, patch_size=PATCH_SIZE
                 )
             else:
-                pred_img = model(noisy_batch_it, training=False).numpy()[0]
+                pred_img_it = model(noisy_batch_it, training=False).numpy()[0]
 
-            total_mse += float(np.mean((clean_img_it - pred_img) ** 2))
-            pred_batch: np.ndarray = pred_img[np.newaxis, ...].astype(np.float32)
+            total_mse += float(np.mean((clean_img_it - pred_img_it) ** 2))
+            pred_batch_it: np.ndarray = pred_img_it[np.newaxis, ...].astype(np.float32)
             total_ssim += float(
                 tf.reduce_mean(
-                    tf.image.ssim(clean_batch_it, pred_batch, max_val=1.0)
+                    tf.image.ssim(clean_batch_it, pred_batch_it, max_val=1.0)
                 ).numpy()
             )
 

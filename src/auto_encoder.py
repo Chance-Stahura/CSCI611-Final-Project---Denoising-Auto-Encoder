@@ -74,6 +74,11 @@ bsd500_train: Path = bsds500_img_folder / "train"
 bsd500_val: Path = bsds500_img_folder / "val"
 bsd500_test: Path = bsds500_img_folder / "test"
 
+# TODO: un-hardcode the XXX_DS paths --> make passed from src/main.py?
+TRAIN_DS: Path = bsd500_train
+VAL_DS: Path = bsd500_val
+TEST_DS: Path = bsd500_test
+
 
 def build_image_set(folder: Path) -> list[str]:
     """Builds the image set"""
@@ -213,9 +218,9 @@ def model_process(
     """This will build the auto_encoder model."""
     tf.random.set_seed(42)
 
-    training_imgs: list[str] = build_image_set(bsd500_train)
-    validation_imgs: list[str] = build_image_set(bsd500_val)
-    test_imgs: list[str] = build_image_set(cbsd_ground_truth)
+    training_imgs: list[str] = build_image_set(TRAIN_DS)
+    validation_imgs: list[str] = build_image_set(VAL_DS)
+    test_imgs: list[str] = build_image_set(TEST_DS)
 
     train_ds = Dataset(
         image_paths=training_imgs,
