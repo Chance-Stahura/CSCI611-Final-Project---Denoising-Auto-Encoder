@@ -17,7 +17,7 @@ from evaluate import evaluate, RESULTS_DIR, METRICS_DIR
 
 BASE_DIR: Path = Path(__file__).resolve().parents[1]
 
-CONFIG_DIR: Path = BASE_DIR / "config"
+CONFIG_DIR: Path = BASE_DIR / "config" / "wait" 
 CONFIG_DIR.mkdir(exist_ok=True)
 DONE_DIR: Path = CONFIG_DIR / "done"
 DONE_DIR.mkdir(exist_ok=True)
@@ -107,7 +107,7 @@ def main() -> None:
                     epochs=epochs,
                 )
 
-            print(f"\nDone with experiment: {short_path}\n")
+            print(f"Done with experiment: {short_path}\n")
 
             try:
                 move(path, DONE_DIR)

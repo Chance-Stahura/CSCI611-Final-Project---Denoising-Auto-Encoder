@@ -97,7 +97,6 @@ def build_image_set(folder: Path) -> list[str]:
 
     return sorted(image_paths)
 
-
 def build_autoencoder(
     input_shape: tuple[
         int | None,
@@ -107,29 +106,20 @@ def build_autoencoder(
 ) -> tf.keras.Model:
     """This will build the auto_encoder model."""
     inputs = layers.Input(shape=input_shape)
+    
+    # Encoder
+    x = layers.Conv2D(64, CONV_KERNEL_SIZE, activation="relu", padding="same")(inputs)
+    x = layers.Conv2D(128, CONV_KERNEL_SIZE, activation="relu", padding="same")(x)
+    x = layers.MaxPooling2D(POOL_FACTOR, padding="same")(x)  # latent: H/2 x W/2 x 128
 
-    x: tf.Tensor = layers.Conv2D(
-        FILTERS_STAGE_1, CONV_KERNEL_SIZE, activation="relu", padding="same"
-    )(inputs)
-    x = layers.Conv2D(
-        FILTERS_STAGE_1, CONV_KERNEL_SIZE, activation="relu", padding="same"
-    )(x)
-    x = layers.MaxPooling2D(POOL_FACTOR, padding="same")(x)
-
-    x = layers.Conv2D(
-        FILTERS_STAGE_2, CONV_KERNEL_SIZE, activation="relu", padding="same"
-    )(x)
-    x = layers.Conv2D(
-        FILTERS_STAGE_2, CONV_KERNEL_SIZE, activation="relu", padding="same"
-    )(x)
+    # Decoder
     x = layers.UpSampling2D(UPSAMPLE_FACTOR)(x)
+    x = layers.Conv2D(128, CONV_KERNEL_SIZE, activation="relu", padding="same")(x)
+    x = layers.Conv2D(64, CONV_KERNEL_SIZE, activation="relu", padding="same")(x)
 
-    outputs = layers.Conv2D(
-        INPUT_CHANNELS, CONV_KERNEL_SIZE, activation="sigmoid", padding="same"
-    )(x)
+    outputs = layers.Conv2D(INPUT_CHANNELS, CONV_KERNEL_SIZE, activation="sigmoid", padding="same")(x)
 
     return models.Model(inputs, outputs, name="denoising_autoencoder")
-
 
 def evaluate_full_image_dataset(
     model: tf.keras.Model,
@@ -163,7 +153,6 @@ def evaluate_full_image_dataset(
 
 # NOTE: this code was adapted for the purpose of this project
 
-
 def build_dense_model(
     input_shape: tuple[
         int | None,
@@ -177,15 +166,32 @@ def build_dense_model(
 
     x = layers.Flatten()(inputs)
 
-    # encoder
-    encoded = layers.Dense(128, activation="relu")(x)
-    encoded = layers.Dense(64, activation="relu")(encoded)
-    encoded = layers.Dense(32, activation="relu")(encoded)
+    # ENCODER 
+    x = layers.Dense(512, kernel_initializer="he_normal")(x) # 12288 -> 512
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
 
-    # decoder
-    decoded = layers.Dense(64, activation="relu")(encoded)
-    decoded = layers.Dense(128, activation="relu")(decoded)
-    decoded = layers.Dense(12288, activation="sigmoid")(decoded)
+    x = layers.Dense(256, kernel_initializer="he_normal")(x) # 512 -> 256
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+
+    # BOTTLENECK (The latent space)
+    # 256 -> 128
+    encoded = layers.Dense(128, activation="relu", name="latent_space")(x) 
+
+    # DECODER
+    # 128 -> 256
+    x = layers.Dense(256, kernel_initializer="he_normal")(encoded)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+
+    x = layers.Dense(512, kernel_initializer="he_normal")(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+
+    # 512 -> 12288
+    decoded = layers.Dense(12288, activation="sigmoid")(x)
+
 
     output = layers.Reshape(input_shape)(decoded)
 
