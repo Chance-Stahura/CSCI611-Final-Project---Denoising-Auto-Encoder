@@ -107,7 +107,7 @@ def main() -> None:
                     epochs=epochs,
                 )
 
-            print(f"Done with experiment: {short_path}\n")
+            print(f"\nDone with experiment: {short_path}\n")
 
             try:
                 move(path, DONE_DIR)

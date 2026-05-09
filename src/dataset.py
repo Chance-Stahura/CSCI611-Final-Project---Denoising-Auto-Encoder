@@ -167,10 +167,13 @@ class Dataset(tf.keras.utils.Sequence):
         clean_batch: list[tf.Tensor] = []
         noisy_batch: list[tf.Tensor] = []
 
-        for path in batch_paths:
-            img_tensor: tf.Tensor = self._load_image_as_tensor(path)
+        img_tensor: tf.Tensor
+        clean_tensor: tf.Tensor
+        noisy_tensor: tf.Tensor
 
-            clean_tensor: tf.Tensor
+        for path in batch_paths:
+
+            img_tensor = self._load_image_as_tensor(path)
 
             if self.return_full_image:
                 clean_tensor = self._pad_to_multiple(img_tensor)
@@ -180,15 +183,12 @@ class Dataset(tf.keras.utils.Sequence):
                 else:
                     clean_tensor = self._center_crop(img_tensor)
 
-            noisy_tensor: tf.Tensor = self._apply_noise(clean_tensor)
+            noisy_tensor = self._apply_noise(clean_tensor)
 
             clean_batch.append(clean_tensor)
             noisy_batch.append(noisy_tensor)
 
-        noisy_batch_tensor: tf.Tensor = tf.stack(noisy_batch)
-        clean_batch_tensor: tf.Tensor = tf.stack(clean_batch)
-
-        return noisy_batch_tensor, clean_batch_tensor
+        return tf.stack(noisy_batch), tf.stack(clean_batch)
 
 
 if __name__ == "__main__":
