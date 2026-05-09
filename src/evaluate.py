@@ -10,9 +10,8 @@ from auto_encoder import (
     build_image_set,
     cbsd_ground_truth,
     PATCH_SIZE,
-    NOISE_SIGMA,
     TEST_BATCH_SIZE,
-    MODELS_DIR
+    MODELS_DIR,
 )
 
 BASE_DIR: Path = Path(__file__).resolve().parents[1]
@@ -74,25 +73,12 @@ def evaluate(
         image_paths=test_imgs,
         patch_size=PATCH_SIZE,
         sigma=sigma,
-        batch_size=1,
+        batch_size=TEST_BATCH_SIZE,
         training=False,
         return_full_image=True,
         shuffle=False,
         noise_type=noise_type,
         pad_multiple=4,
-        salt_pepper_p=salt_pepper_p,
-        occlusion_size=occlusion_size,
-    )
-
-    test_patch_ds = Dataset(
-        image_paths=test_imgs,
-        patch_size=PATCH_SIZE,
-        sigma=sigma,
-        batch_size=TEST_BATCH_SIZE,
-        training=False,
-        return_full_image=False,
-        shuffle=False,
-        noise_type=noise_type,
         salt_pepper_p=salt_pepper_p,
         occlusion_size=occlusion_size,
     )
@@ -110,6 +96,12 @@ def evaluate(
     psnr_scores: dict[str, float] = {}
     ssim_scores: dict[str, float] = {}
 
+    # use first image for comparison grid
+    num_images = len(test_full_ds)
+    noisy_batch, clean_batch = test_full_ds[1]  # choose index for plot outputs
+    noisy_img = noisy_batch[0].numpy()
+    clean_img = clean_batch[0].numpy()
+
     # run evaluation/testing on CBSD68
     for name, model in models.items():
 
@@ -125,26 +117,25 @@ def evaluate(
         # average PSNR and SSIM for all test images
         total_mse: float = 0.0
         total_ssim: float = 0.0
-        num_images = len(test_full_ds)
 
         for i in range(num_images):
-            noisy_batch, clean_batch = test_full_ds[i]
-            noisy_img = noisy_batch[0].numpy()
-            clean_img = clean_batch[0].numpy()
+            noisy_batch_it, clean_batch_it = test_full_ds[i]
+            noisy_img_it = noisy_batch_it[0].numpy()
+            clean_img_it = clean_batch_it[0].numpy()
 
             # dense model + benchmark are not meant to handle full images
             if name == "dense_autoencoder" or name == "original_benchmark":
                 pred_img = reconstruct_full_image(
-                    model, noisy_img, patch_size=PATCH_SIZE
+                    model, noisy_img_it, patch_size=PATCH_SIZE
                 )
             else:
-                pred_img = model(noisy_batch, training=False).numpy()[0]
+                pred_img = model(noisy_batch_it, training=False).numpy()[0]
 
-            total_mse += float(np.mean((clean_img - pred_img) ** 2))
+            total_mse += float(np.mean((clean_img_it - pred_img) ** 2))
             pred_batch: np.ndarray = pred_img[np.newaxis, ...].astype(np.float32)
             total_ssim += float(
                 tf.reduce_mean(
-                    tf.image.ssim(clean_batch, pred_batch, max_val=1.0)
+                    tf.image.ssim(clean_batch_it, pred_batch, max_val=1.0)
                 ).numpy()
             )
 
@@ -179,10 +170,6 @@ def evaluate(
         with out_path.open("w", encoding="utf-8") as f:
             json.dump(model_metrics, f, indent=4)
 
-        # use first image for comparison grid
-        noisy_batch, clean_batch = test_full_ds[0]
-        noisy_img = noisy_batch[0].numpy()
-
         if name in {"dense_autoencoder", "original_benchmark"}:
             pred_img = reconstruct_full_image(
                 model, noisy_img, patch_size=PATCH_SIZE
@@ -203,18 +190,18 @@ def evaluate(
         label_fs = 24
 
         suptitle: str = (
-            f"Denoising Comparison {name}\n"
+            f"Denoising Comparison: {name}\n"
             f"experiment: {experiment}"
         )
         plt.suptitle(suptitle, fontsize=title_fs)
 
-        axes[0].imshow(noisy_batch[0], interpolation="nearest")
+        axes[0].imshow(noisy_img, interpolation="nearest")
         axes[0].set_title("Noisy", fontsize=label_fs)
 
         axes[1].imshow(pred_img, interpolation="nearest")
         axes[1].set_title("Denoised", fontsize=label_fs)
 
-        axes[2].imshow(clean_batch[0], interpolation="nearest")
+        axes[2].imshow(clean_img, interpolation="nearest")
         axes[2].set_title("Clean", fontsize=label_fs)
 
         for ax in axes:
@@ -222,9 +209,9 @@ def evaluate(
 
         plt.imsave(EXPERIMENT_DIR / f"{name}_denoised.png", pred_img)
         if not (EXPERIMENT_DIR / "noisy.png").is_file():
-            plt.imsave(EXPERIMENT_DIR / "noisy.png", noisy_batch[0])
+            plt.imsave(EXPERIMENT_DIR / "noisy.png", noisy_img)
         if not (EXPERIMENT_DIR / "clean.png").is_file():
-            plt.imsave(EXPERIMENT_DIR / "clean.png", clean_batch[0])
+            plt.imsave(EXPERIMENT_DIR / "clean.png", clean_img)
 
         plt.tight_layout()
         plt.savefig(EXPERIMENT_DIR / f"{name}_comparison.png",

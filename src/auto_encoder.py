@@ -68,7 +68,6 @@ BENCHMARK_DIR.mkdir(parents=True, exist_ok=True)
 
 cbsd68_img_folder: Path = download_dataset(TARGET_DIR_CBSD68)
 cbsd_ground_truth: Path = cbsd68_img_folder / "original_png"
-# cbsd_ground_truth: Path = BASE_DIR / "data/examples"  # for custom test images
 
 bsds500_img_folder: Path = download_dataset(TARGET_DIR_BSDS500)
 bsd500_train: Path = bsds500_img_folder / "train"
