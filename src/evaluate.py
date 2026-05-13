@@ -32,39 +32,134 @@ def compute_psnr(mse):
     return 10 * tf.math.log(1.0 / mse) / tf.math.log(10.0)
 
 
+# depricated function for more efficient version
+# def reconstruct_full_image(
+#     model, noisy_img: np.ndarray, patch_size: int = 64
+# ) -> np.ndarray:
+#     height, width, channels = noisy_img.shape
+
+#     stride = patch_size // 2
+
+#    # pad_h = (patch_size - height % patch_size) % patch_size
+#    # pad_w = (patch_size - width % patch_size) % patch_size
+#     pad_h = (stride - height % stride) % stride
+#     pad_w = (stride - width % stride) % stride
+
+#     padded = np.pad(noisy_img, ((0, pad_h + patch_size), (0, pad_w + patch_size), (0, 0)), mode="reflect")
+#     pad_height, pad_width, _ = padded.shape
+#     output = np.zeros_like(padded)
+#     weights = np.zeros_like(padded)
+
+#     w = np.hanning(patch_size)
+#     window = np.outer(w, w)
+#     window = window[..., np.newaxis].astype(np.float32)
+
+#     for i in range(0, pad_height - patch_size + 1, stride):
+#         for j in range(0, pad_width - patch_size + 1, stride):
+#             patch: np.ndarray = padded[
+#                 i : i + patch_size,
+#                 j : j + patch_size,
+#                 :,
+#             ][np.newaxis, ...]
+#             pred = model(patch, training = False).numpy()[0]
+#             output[i:i + patch_size, j:j + patch_size, :] += pred * window
+#             weights[i:i + patch_size, j:j + patch_size, :] += window
+
+#     output = output / np.maximum(weights, 1e-8)
+
+#     return output[:height, :width, :]
+
+
 def reconstruct_full_image(
-    model, noisy_img: np.ndarray, patch_size: int = 64
+    model,
+    noisy_img: np.ndarray,
+    patch_size: int = 64,
+    batch_size: int = 128,
 ) -> np.ndarray:
+
     height, width, channels = noisy_img.shape
 
     stride = patch_size // 3
 
-   # pad_h = (patch_size - height % patch_size) % patch_size
-   # pad_w = (patch_size - width % patch_size) % patch_size
     pad_h = (stride - height % stride) % stride
     pad_w = (stride - width % stride) % stride
 
-    padded = np.pad(noisy_img, ((0, pad_h + patch_size), (0, pad_w + patch_size), (0, 0)), mode="reflect")
-    pad_height, pad_width, _ = padded.shape
-    output = np.zeros_like(padded)
-    weights = np.zeros_like(padded)
+    padded = np.pad(
+        noisy_img,
+        ((0, pad_h + patch_size),
+         (0, pad_w + patch_size),
+         (0, 0)),
+        mode="reflect"
+    )
 
+    pad_height, pad_width, _ = padded.shape
+
+    output = np.zeros_like(padded, dtype=np.float32)
+    weights = np.zeros_like(padded, dtype=np.float32)
+
+    # Hann window
     w = np.hanning(patch_size)
-    window = np.outer(w, w)
-    window = window[..., np.newaxis].astype(np.float32)
+    window = np.outer(w, w).astype(np.float32)
+    window = window[..., np.newaxis]
+
+    # ---------------------------------------------------
+    # Extract all patches first
+    # ---------------------------------------------------
+
+    patches = []
+    coords = []
 
     for i in range(0, pad_height - patch_size + 1, stride):
         for j in range(0, pad_width - patch_size + 1, stride):
-            patch: np.ndarray = padded[
-                i : i + patch_size,
-                j : j + patch_size,
-                :,
-            ][np.newaxis, ...]
-            pred = model(patch, training = False).numpy()[0]
-            output[i:i + patch_size, j:j + patch_size, :] += pred * window
-            weights[i:i + patch_size, j:j + patch_size, :] += window
 
-    output = output / np.maximum(weights, 1e-8)
+            patch = padded[
+                i:i + patch_size,
+                j:j + patch_size,
+                :
+            ]
+
+            patches.append(patch)
+            coords.append((i, j))
+
+    patches = np.array(patches, dtype=np.float32)
+
+    # ---------------------------------------------------
+    # Batched inference
+    # ---------------------------------------------------
+
+    preds = []
+
+    for k in range(0, len(patches), batch_size):
+
+        batch = patches[k:k + batch_size]
+
+        pred_batch = model(batch, training=False).numpy()
+
+        preds.append(pred_batch)
+
+    preds = np.concatenate(preds, axis=0)
+
+    # ---------------------------------------------------
+    # Reconstruction
+    # ---------------------------------------------------
+
+    for pred, (i, j) in zip(preds, coords):
+
+        weighted = pred * window
+
+        output[
+            i:i + patch_size,
+            j:j + patch_size,
+            :
+        ] += weighted
+
+        weights[
+            i:i + patch_size,
+            j:j + patch_size,
+            :
+        ] += window
+
+    output /= np.maximum(weights, 1e-8)
 
     return output[:height, :width, :]
 
