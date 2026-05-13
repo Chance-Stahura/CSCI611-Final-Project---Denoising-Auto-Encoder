@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 
 from pathlib import Path
 
+from datetime import datetime, timedelta
+import time
+
 from auto_encoder import (
     build_image_set,
     TEST_DS,
@@ -212,6 +215,11 @@ def evaluate(
     # run evaluation/testing on CBSD68
     for name, model in models.items():
 
+        # time monitoring
+        print("* Model: ", name)
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]  Start time")
+        start_time = time.time()  # initial elapsed time = 00:00:00
+
         if name == "denoising_autoencoder":
             name_out = "denoise"
         elif name == "dense_autoencoder":
@@ -253,6 +261,11 @@ def evaluate(
                 ).numpy()
             )
 
+        # time monitoring
+        elapsed = timedelta(seconds=int(time.time() - start_time))
+        print(f"+[{elapsed}]  MSE, SSIM calculated")
+        start_time = time.time()  # initial elapsed time = 00:00:00
+
         avg_mse: float = total_mse / num_images
         avg_psnr: float = float(compute_psnr(avg_mse).numpy())
         avg_ssim: float = total_ssim / num_images
@@ -290,6 +303,11 @@ def evaluate(
             )
         else:
             pred_img = model(noisy_batch, training=False).numpy()[0]
+
+        # time monitoring
+        elapsed = timedelta(seconds=int(time.time() - start_time))
+        print(f"+[{elapsed}]  Predicted image constructed")
+        start_time = time.time()  # initial elapsed time = 00:00:00
 
         # generate comparison grids:
         # noisy input -> model output -> ground truth
@@ -348,6 +366,11 @@ def evaluate(
         plt.legend()
         plt.savefig(EXPERIMENT_DIR / f"{name_out}_loss.png")
         plt.close()
+
+        # time monitoring
+        elapsed = timedelta(seconds=int(time.time() - start_time))
+        print(f"+[{elapsed}]  Model-specific plots saved")
+        # print(f" [{datetime.now().strftime('%H:%M:%S')}]\n")
 
     # save bar chart comparing PSNR/SSIM for all models
     plt.bar(psnr_scores.keys(), psnr_scores.values())
