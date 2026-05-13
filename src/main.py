@@ -2,6 +2,9 @@
 
 # coding: utf-8
 
+from datetime import datetime, timedelta
+import time
+
 from json import load
 
 from pathlib import Path
@@ -25,6 +28,10 @@ DONE_DIR.mkdir(exist_ok=True)
 
 def main() -> None:
     """The main code. This will iterate through the config folder and run the code for each config file."""
+
+    # time monitoring
+    print(f"##### Start time: [{datetime.now().strftime('%H:%M:%S')}]\n")
+    main_start_time = time.time()  # initial elapsed time = 00:00:00
 
     try:
         if not DONE_DIR.exists():
@@ -61,7 +68,11 @@ def main() -> None:
             dataset: str = config["training"]["dataset"]
 
             print(f"{'=' * 50}")
-            print(f"\nRunnning experiment: {short_path}\n")
+            # time monitoring
+            print(f"\n[{datetime.now().strftime('%H:%M:%S')}]"
+                  f"  Starting experiment: {short_path}")
+            it_time = time.time()
+            init_time = time.time()
 
             model_save_files: set[Path] = {
                 MODELS_DIR / f"denoise_full/{experiment_name}.keras",
@@ -83,6 +94,12 @@ def main() -> None:
                     salt_pepper_p=salt_pepper_p,
                     occlusion_size=occlusion_size,
                 )
+
+            # time monitoring
+            training_elapsed = timedelta(seconds=int(time.time() - it_time))
+            print(f"\n{short_path}\n[{datetime.now().strftime('%H:%M:%S')}]"
+                  f"  Training complete - elapsed time +[{training_elapsed}]")
+            it_time = time.time()
 
             results_save_files: set[Path] = {
                 RESULTS_DIR / experiment_name / "benchmark_loss.png",
@@ -117,6 +134,19 @@ def main() -> None:
 
             print(f"Moved {short_path} into {DONE_DIR.relative_to(BASE_DIR)}.\n\n")
 
+            # time monitoring
+            eval_elapsed = timedelta(seconds=int(time.time() - it_time))
+            print(f"\n{short_path}\n[{datetime.now().strftime('%H:%M:%S')}]"
+                  f"  Evaluation complete - elapsed time +[{eval_elapsed}]")
+
+            config_elapsed = timedelta(seconds=int(time.time() - init_time))
+            print(f"\n{short_path}\n[{datetime.now().strftime('%H:%M:%S')}]"
+                  f"  Finished experiment - total elapsed time +[{config_elapsed}]")
+
+    # time monitoring
+    print(f"##### End time: [{datetime.now().strftime('%H:%M:%S')}]")
+    main_elapsed = timedelta(seconds=int(time.time() - main_start_time))
+    print(f"### Total elapsed time: +[{main_elapsed}]\n")
 
 if __name__ == "__main__":
     main()

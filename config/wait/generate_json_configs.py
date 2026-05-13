@@ -8,7 +8,7 @@ DATASETS: list[str] = ["bsds500"]
 
 SIGMA_VALUES: list[int] = [5, 10, 15, 20, 25, 35, 50]
 P_VALUES: list[float] = [0.01, 0.02, 0.05, 0.1, 0.2, 0.3]
-SIZE_VALUES: list[int] = [8, 12, 16, 24, 32]
+SIZE_VALUES: list[int] = [8, 12, 16, 24, 32, 64, 128]
 
 
 def write_config(config: dict, output_dir: Path) -> None:

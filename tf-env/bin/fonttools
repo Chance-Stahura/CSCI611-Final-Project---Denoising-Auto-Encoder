@@ -1,0 +1,8 @@
+#!/bin/sh
+'''exec' "/home/corrupt_carbon/CSU Chico/csci_611/CSCI611-Final-Project---Denoising-Auto-Encoder/tf-env/bin/python3" "$0" "$@"
+' '''
+import sys
+from fontTools.__main__ import main
+if __name__ == '__main__':
+    sys.argv[0] = sys.argv[0].removesuffix('.exe')
+    sys.exit(main())
