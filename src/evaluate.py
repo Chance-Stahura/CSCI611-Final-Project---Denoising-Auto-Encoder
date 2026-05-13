@@ -216,8 +216,7 @@ def evaluate(
     for name, model in models.items():
 
         # time monitoring
-        print("* Model: ", name)
-        print(f"[{datetime.now().strftime('%H:%M:%S')}]  Start time")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}]  model: {name}")
         start_time = time.time()  # initial elapsed time = 00:00:00
 
         if name == "denoising_autoencoder":
