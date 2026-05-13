@@ -9,6 +9,7 @@ import json
 
 import tensorflow as tf  # type: ignore
 from tensorflow.keras import layers, models  # type: ignore
+from keras.layers import BatchNormalization
 # to train all three models at one time
 from original_benchmark import build_original_tf_benchmark_model
 
@@ -110,17 +111,37 @@ def build_autoencoder(
     # Encoder
     x = layers.Conv2D(32, CONV_KERNEL_SIZE, activation="relu", padding="same")(inputs) # 64x64x32
     x = layers.MaxPooling2D(2, padding="same")(x)   # 64x64 -> 32x32
-    x = layers.Conv2D(64, CONV_KERNEL_SIZE, activation="relu", padding="same")(x)
+
+    x = layers.Conv2D(64, CONV_KERNEL_SIZE, padding="same")(x)
+    x = BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
     x = layers.MaxPooling2D(2, padding="same")(x)   # 32x32 -> 16x16
+
     x = layers.Conv2D(128, CONV_KERNEL_SIZE, activation="relu", padding="same")(x)
     x = layers.MaxPooling2D(2, padding="same")(x)   # 16x16 -> 8x8  ← latent: 8x8x128 = 8,192
 
+    x = layers.Conv2D(256, CONV_KERNEL_SIZE, padding="same")(x)
+    x = BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.MaxPooling2D(2, padding="same")(x)
+
     # Decoder
     x = layers.UpSampling2D(2)(x)
-    x = layers.Conv2D(64, CONV_KERNEL_SIZE, activation="relu", padding="same")(x)
+    x = layers.Conv2D(256, CONV_KERNEL_SIZE, padding="same")(x)
+    x = BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+
+    x = layers.UpSampling2D(2)(x)
+    x = layers.Conv2D(128, CONV_KERNEL_SIZE, activation="relu", padding="same")(x)
+
+    x = layers.UpSampling2D(2)(x)
+    x = layers.Conv2D(64, CONV_KERNEL_SIZE, padding="same")(x)
+    x = BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+
     x = layers.UpSampling2D(2)(x)
     x = layers.Conv2D(32, CONV_KERNEL_SIZE, activation="relu", padding="same")(x)
-    x = layers.UpSampling2D(2)(x)
+
     outputs = layers.Conv2D(INPUT_CHANNELS, CONV_KERNEL_SIZE, activation="sigmoid", padding="same")(x)
 
     return models.Model(inputs, outputs, name="denoising_autoencoder")

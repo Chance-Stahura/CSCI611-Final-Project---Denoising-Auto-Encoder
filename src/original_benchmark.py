@@ -25,12 +25,17 @@ def build_original_tf_benchmark_model(
   # Encoder
     x = layers.Conv2D(32, 3, activation="relu", padding="same")(inputs)
     x = layers.MaxPooling2D(2, padding="same")(x)            # 64x64 -> 32x32
-    x = layers.Conv2D(64, 3, activation="relu", padding="same")(x)
+    x = layers.Conv2D(64, 3, padding="same")(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
     x = layers.MaxPooling2D(2, padding="same")(x)            # 32x32 -> 16x16
     x = layers.Conv2D(128, 3, activation="relu", padding="same")(x)
-    x = layers.MaxPooling2D(2, padding="same")(x)            # 16x16 -> 8x8 ← latent: 8x8x128 = 8,192
+    x = layers.MaxPooling2D(2, padding="same")(x)            # 16x16 -> 8x8x128 = 8,192
+    x = layers.Conv2D(256, 3, activation="relu", padding="same")(x)
+    x = layers.MaxPooling2D(2, padding="same")(x)
 
     # Decoder
+    x = layers.Conv2DTranspose(256, 3, strides=2, activation="relu", padding="same")(x)
     x = layers.Conv2DTranspose(128, 3, strides=2, activation="relu", padding="same")(x)  # 8x8 -> 16x16
     x = layers.Conv2DTranspose(64, 3, strides=2, activation="relu", padding="same")(x)   # 16x16 -> 32x32
     x = layers.Conv2DTranspose(32, 3, strides=2, activation="relu", padding="same")(x)   # 32x32 -> 64x64
