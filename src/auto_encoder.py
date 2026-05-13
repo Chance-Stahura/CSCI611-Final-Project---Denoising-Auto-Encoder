@@ -105,18 +105,22 @@ def build_autoencoder(
     ] = FULL_IMAGE_INPUT_SHAPE,
 ) -> tf.keras.Model:
     """This will build the auto_encoder model."""
-    inputs = layers.Input(shape=input_shape)
+    inputs = layers.Input(shape=input_shape) # 64x64x3
     
     # Encoder
-    x = layers.Conv2D(64, CONV_KERNEL_SIZE, activation="relu", padding="same")(inputs)
+    x = layers.Conv2D(32, CONV_KERNEL_SIZE, activation="relu", padding="same")(inputs) # 64x64x32
+    x = layers.MaxPooling2D(2, padding="same")(x)   # 64x64 -> 32x32
+    x = layers.Conv2D(64, CONV_KERNEL_SIZE, activation="relu", padding="same")(x)
+    x = layers.MaxPooling2D(2, padding="same")(x)   # 32x32 -> 16x16
     x = layers.Conv2D(128, CONV_KERNEL_SIZE, activation="relu", padding="same")(x)
-    x = layers.MaxPooling2D(POOL_FACTOR, padding="same")(x)  # latent: H/2 x W/2 x 128
+    x = layers.MaxPooling2D(2, padding="same")(x)   # 16x16 -> 8x8  ← latent: 8x8x128 = 8,192
 
     # Decoder
-    x = layers.UpSampling2D(UPSAMPLE_FACTOR)(x)
-    x = layers.Conv2D(128, CONV_KERNEL_SIZE, activation="relu", padding="same")(x)
+    x = layers.UpSampling2D(2)(x)
     x = layers.Conv2D(64, CONV_KERNEL_SIZE, activation="relu", padding="same")(x)
-
+    x = layers.UpSampling2D(2)(x)
+    x = layers.Conv2D(32, CONV_KERNEL_SIZE, activation="relu", padding="same")(x)
+    x = layers.UpSampling2D(2)(x)
     outputs = layers.Conv2D(INPUT_CHANNELS, CONV_KERNEL_SIZE, activation="sigmoid", padding="same")(x)
 
     return models.Model(inputs, outputs, name="denoising_autoencoder")
@@ -134,6 +138,14 @@ def evaluate_full_image_dataset(
         noisy_batch, clean_batch = dataset[i]
 
         predictions: tf.Tensor = model.predict(noisy_batch, verbose=0)
+
+        # Crop predictions to match clean image size
+        predictions = predictions[
+            :,
+            :clean_batch.shape[1],
+            :clean_batch.shape[2],
+            :
+        ]
 
         mse: float = tf.reduce_mean(tf.square(clean_batch - predictions)).numpy().item()
         mae: float = tf.reduce_mean(tf.abs(clean_batch - predictions)).numpy().item()

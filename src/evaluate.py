@@ -36,23 +36,35 @@ def reconstruct_full_image(
     model, noisy_img: np.ndarray, patch_size: int = 64
 ) -> np.ndarray:
     height, width, channels = noisy_img.shape
-    pad_h = (patch_size - height % patch_size) % patch_size
-    pad_w = (patch_size - width % patch_size) % patch_size
 
-    padded = np.pad(noisy_img, ((0, pad_h), (0, pad_w), (0, 0)), mode="reflect")
+    stride = patch_size // 3
+
+   # pad_h = (patch_size - height % patch_size) % patch_size
+   # pad_w = (patch_size - width % patch_size) % patch_size
+    pad_h = (stride - height % stride) % stride
+    pad_w = (stride - width % stride) % stride
+
+    padded = np.pad(noisy_img, ((0, pad_h + patch_size), (0, pad_w + patch_size), (0, 0)), mode="reflect")
     pad_height, pad_width, _ = padded.shape
     output = np.zeros_like(padded)
+    weights = np.zeros_like(padded)
 
-    for i in range(0, pad_height, patch_size):
-        for j in range(0, pad_width, patch_size):
+    w = np.hanning(patch_size)
+    window = np.outer(w, w)
+    window = window[..., np.newaxis].astype(np.float32)
+
+    for i in range(0, pad_height - patch_size + 1, stride):
+        for j in range(0, pad_width - patch_size + 1, stride):
             patch: np.ndarray = padded[
                 i : i + patch_size,
                 j : j + patch_size,
                 :,
             ][np.newaxis, ...]
-            output[i : i + patch_size, j : j + patch_size, :] = model(
-                patch, training=False
-            ).numpy()[0]
+            pred = model(patch, training = False).numpy()[0]
+            output[i:i + patch_size, j:j + patch_size, :] += pred * window
+            weights[i:i + patch_size, j:j + patch_size, :] += window
+
+    output = output / np.maximum(weights, 1e-8)
 
     return output[:height, :width, :]
 
@@ -130,6 +142,13 @@ def evaluate(
                 )
             else:
                 pred_img_it = model(noisy_batch_it, training=False).numpy()[0]
+
+            # Crop prediction to clean image size
+            pred_img_it = pred_img_it[
+                :clean_img_it.shape[0],
+                :clean_img_it.shape[1],
+                :
+            ]
 
             total_mse += float(np.mean((clean_img_it - pred_img_it) ** 2))
             pred_batch_it: np.ndarray = pred_img_it[np.newaxis, ...].astype(np.float32)
