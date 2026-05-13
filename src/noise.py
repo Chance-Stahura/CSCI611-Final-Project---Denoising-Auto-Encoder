@@ -16,13 +16,16 @@ def add_gaussian_noise(x: tf.Tensor, sigma: float = 0.2) -> tf.Tensor:
 
 def add_salt_pepper_noise(x: tf.Tensor, p: float = 0.1) -> tf.Tensor:
     """Adds salt and pepper noise to an image"""
-    random_vals: tf.Tensor = tf.random.uniform(tf.shape(x))
+    h, w, _ = x.shape
 
-    salt: tf.Tensor = tf.cast(random_vals > (1 - p / 2), tf.float32)
-    pepper: tf.Tensor = tf.cast(random_vals < (p / 2), tf.float32)
+    r: tf.Tensor = tf.random.uniform((h, w, 1))
 
-    x_noisy: tf.Tensor = x * (1 - salt - pepper) + salt
-    return x_noisy
+    salt: tf.Tensor = r > (1 - p / 2)
+    pepper: tf.Tensor = r < (p / 2)
+
+    x = tf.where(pepper, 0.0, x)
+    x = tf.where(salt, 1.0, x)
+    return x
 
 
 def add_occlusion(x: tf.Tensor, size: int = 12) -> tf.Tensor:
