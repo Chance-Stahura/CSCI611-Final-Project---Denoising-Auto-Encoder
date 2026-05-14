@@ -1,0 +1,13 @@
+{
+    "experiment": {
+        "name": "salt_pepper_0p1_5_cbsd68"
+    },
+    "noise": {
+        "type": "salt_pepper",
+        "p": 0.1
+    },
+    "training": {
+        "epochs": 5,
+        "dataset": "cbsd68"
+    }
+}
