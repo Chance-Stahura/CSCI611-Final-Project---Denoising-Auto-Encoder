@@ -22,23 +22,39 @@ def build_original_tf_benchmark_model(
 
     inputs = layers.Input(shape=input_shape) # 64x64x3
 
-  # Encoder
+    # ENCODER
+    
+    # Block 1: 64x64x3 --> 32x32x32
     x = layers.Conv2D(32, 3, activation="relu", padding="same")(inputs)
-    x = layers.MaxPooling2D(2, padding="same")(x)            # 64x64 -> 32x32
+    x = layers.MaxPooling2D(2, padding="same")(x)
+    
+    # Block 2: 32x32x32 --> 16x16x64
     x = layers.Conv2D(64, 3, padding="same")(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation("relu")(x)
-    x = layers.MaxPooling2D(2, padding="same")(x)            # 32x32 -> 16x16
-    x = layers.Conv2D(128, 3, activation="relu", padding="same")(x)
-    x = layers.MaxPooling2D(2, padding="same")(x)            # 16x16 -> 8x8x128 = 8,192
-    x = layers.Conv2D(256, 3, activation="relu", padding="same")(x)
     x = layers.MaxPooling2D(2, padding="same")(x)
+    
+    # Block 3: 16x16x64 --> 8x8x128
+    x = layers.Conv2D(128, 3, activation="relu", padding="same")(x)
+    x = layers.MaxPooling2D(2, padding="same")(x)
+    
+    # Block 4: 8x8x128x --> 4x4x254
+    # x = layers.Conv2D(256, 3, activation="relu", padding="same")(x)
+    # x = layers.MaxPooling2D(2, padding="same")(x)
 
-    # Decoder
-    x = layers.Conv2DTranspose(256, 3, strides=2, activation="relu", padding="same")(x)
-    x = layers.Conv2DTranspose(128, 3, strides=2, activation="relu", padding="same")(x)  # 8x8 -> 16x16
-    x = layers.Conv2DTranspose(64, 3, strides=2, activation="relu", padding="same")(x)   # 16x16 -> 32x32
-    x = layers.Conv2DTranspose(32, 3, strides=2, activation="relu", padding="same")(x)   # 32x32 -> 64x64
+    # DECODER
+
+    # Block 1: HxWx254 --> HxWx128
+    # x = layers.Conv2DTranspose(256, 3, strides=2, activation="relu", padding="same")(x)
+
+    # Block 2: HxWx128 --> HxWx64
+    x = layers.Conv2DTranspose(128, 3, strides=2, activation="relu", padding="same")(x)
+
+    # Block 3: HxWx64 --> HxWx32
+    x = layers.Conv2DTranspose(64, 3, strides=2, activation="relu", padding="same")(x)
+
+    # Block 4: HxWx32 --> HxWx3
+    x = layers.Conv2DTranspose(32, 3, strides=2, activation="relu", padding="same")(x)
 
     outputs = layers.Conv2D(IMAGE_CHANNELS, 3, activation="sigmoid", padding="same")(x)
 

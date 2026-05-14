@@ -107,38 +107,48 @@ def build_autoencoder(
 ) -> tf.keras.Model:
     """This will build the auto_encoder model."""
     inputs = layers.Input(shape=input_shape) # 64x64x3
-    
-    # Encoder
-    x = layers.Conv2D(32, CONV_KERNEL_SIZE, activation="relu", padding="same")(inputs) # 64x64x32
-    x = layers.MaxPooling2D(2, padding="same")(x)   # 64x64 -> 32x32
 
+    # Encoder
+
+    # Block 1: 64x64x3 --> 32x32x32
+    x = layers.Conv2D(32, CONV_KERNEL_SIZE, activation="relu", padding="same")(inputs)
+    x = layers.MaxPooling2D(2, padding="same")(x)
+
+    # Block 2: 32x32x32 --> 16x16x64
     x = layers.Conv2D(64, CONV_KERNEL_SIZE, padding="same")(x)
     x = BatchNormalization()(x)
     x = layers.Activation("relu")(x)
     x = layers.MaxPooling2D(2, padding="same")(x)   # 32x32 -> 16x16
 
+    # Block 3: 16x16x64 --> 8x8x128
     x = layers.Conv2D(128, CONV_KERNEL_SIZE, activation="relu", padding="same")(x)
     x = layers.MaxPooling2D(2, padding="same")(x)   # 16x16 -> 8x8  ← latent: 8x8x128 = 8,192
 
-    x = layers.Conv2D(256, CONV_KERNEL_SIZE, padding="same")(x)
-    x = BatchNormalization()(x)
-    x = layers.Activation("relu")(x)
-    x = layers.MaxPooling2D(2, padding="same")(x)
+    # Block 4: 8x8x128 --> 4x4x256
+    # x = layers.Conv2D(256, CONV_KERNEL_SIZE, padding="same")(x)
+    # x = BatchNormalization()(x)
+    # x = layers.Activation("relu")(x)
+    # x = layers.MaxPooling2D(2, padding="same")(x)
 
     # Decoder
-    x = layers.UpSampling2D(2)(x)
-    x = layers.Conv2D(256, CONV_KERNEL_SIZE, padding="same")(x)
-    x = BatchNormalization()(x)
-    x = layers.Activation("relu")(x)
 
+    # Block 1: 4x4x256 --> 8x8x128
+    # x = layers.UpSampling2D(2)(x)
+    # x = layers.Conv2D(256, CONV_KERNEL_SIZE, padding="same")(x)
+    # x = BatchNormalization()(x)
+    # x = layers.Activation("relu")(x)
+
+    # Block 2: 8x8x128 --> 16x16x64
     x = layers.UpSampling2D(2)(x)
     x = layers.Conv2D(128, CONV_KERNEL_SIZE, activation="relu", padding="same")(x)
 
+    # Block 3: 16x16x64 --> 32x32x32
     x = layers.UpSampling2D(2)(x)
     x = layers.Conv2D(64, CONV_KERNEL_SIZE, padding="same")(x)
     x = BatchNormalization()(x)
     x = layers.Activation("relu")(x)
 
+    # Block 4: 32x32x32 --> 64x64x3
     x = layers.UpSampling2D(2)(x)
     x = layers.Conv2D(32, CONV_KERNEL_SIZE, activation="relu", padding="same")(x)
 
@@ -197,34 +207,39 @@ def build_dense_model(
     # (64 x 64) x 3 = 12288
     inputs = layers.Input(shape=input_shape)
 
-    x = layers.Flatten()(inputs)
+    x = layers.Flatten()(inputs)  # 1-dim vector
 
-    # ENCODER 
+    # ENCODER
+
+    # Block 1: 12288 --> 512
     x = layers.Dense(512, kernel_initializer="he_normal")(x) # 12288 -> 512
     x = layers.BatchNormalization()(x)
     x = layers.Activation("relu")(x)
 
+    # Block 2: 512 --> 256
     x = layers.Dense(256, kernel_initializer="he_normal")(x) # 512 -> 256
     x = layers.BatchNormalization()(x)
     x = layers.Activation("relu")(x)
 
-    # BOTTLENECK (The latent space)
-    # 256 -> 128
+    # BOTTLENECK
+
+    # Latent Space: 256 --> 128
     encoded = layers.Dense(128, activation="relu", name="latent_space")(x) 
 
     # DECODER
-    # 128 -> 256
+    
+    # Block 1: 128 --> 256
     x = layers.Dense(256, kernel_initializer="he_normal")(encoded)
     x = layers.BatchNormalization()(x)
     x = layers.Activation("relu")(x)
 
+    # Block 2: 256 --> 512
     x = layers.Dense(512, kernel_initializer="he_normal")(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation("relu")(x)
 
-    # 512 -> 12288
+    # 512 --> 12288
     decoded = layers.Dense(12288, activation="sigmoid")(x)
-
 
     output = layers.Reshape(input_shape)(decoded)
 
